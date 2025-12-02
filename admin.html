@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin | Cegonha</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+  <body>
+    <nav class="sidebar">
+      <div class="admin-logo"><i class="fa-solid fa-user-gear"></i> Painel</div>
+      <div class="sidebar-menu">
+        <button class="active" onclick="switchPanel('orders')">
+          <i class="fa-solid fa-receipt"></i> Pedidos
+        </button>
+        <button onclick="switchPanel('menu')">
+          <i class="fa-solid fa-burger"></i> Cardápio
+        </button>
+        <button onclick="switchPanel('chat')">
+          <i class="fa-regular fa-comments"></i> Chat
+        </button>
+        <button class="logout-btn" onclick="adminLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <section id="panel-orders" class="panel-section active">
+        <div class="header-section">
+          <h2>Pedidos do Dia</h2>
+          <button class="btn-outline" onclick="carregarPedidosAdmin()">
+            <i class="fa-solid fa-rotate"></i> Atualizar
+          </button>
+        </div>
+        <div id="admin-orders-list" class="orders-grid">
+          <p>Carregando...</p>
+        </div>
+      </section>
+
+      <section id="panel-menu" class="panel-section">
+        <div class="header-section">
+          <h2>Gerenciar Cardápio</h2>
+          <button class="btn-primary">+ Novo Produto</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Disponível</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="admin-menu-list"></tbody>
+        </table>
+      </section>
+
+      <section id="panel-chat" class="panel-section">
+        <div class="header-section">
+          <h2>Atendimento ao Cliente</h2>
+          <button class="btn-outline" onclick="carregarListaConversas()">
+            <i class="fa-solid fa-rotate"></i> Atualizar Lista
+          </button>
+        </div>
+
+        <div class="chat-layout">
+          <div id="chat-users-list" class="chat-sidebar-list">
+            <p style="padding: 20px; color: #666">Carregando...</p>
+          </div>
+
+          <div class="chat-window">
+            <div id="admin-chat-messages" class="chat-messages-container">
+              <div style="text-align: center; margin-top: 50px; color: #555">
+                <i
+                  class="fa-regular fa-comments"
+                  style="font-size: 3rem; margin-bottom: 10px"
+                ></i>
+                <p>Selecione um cliente para iniciar o atendimento.</p>
+              </div>
+            </div>
+
+            <div
+              id="admin-chat-input-area"
+              class="chat-input-area"
+              style="display: none"
+            >
+              <input
+                type="text"
+                id="admin-chat-input"
+                placeholder="Digite sua resposta..."
+                onkeypress="handleAdminChatKey(event)"
+              />
+              <button class="btn-primary" onclick="enviarRespostaAdmin()">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script type="module" src="js/admin.js"></script>
+  </body>
+</html>

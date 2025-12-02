@@ -1,0 +1,2404 @@
+:root {
+  --color-red: #d93025;
+  --color-red-dark: #a51d15;
+  --color-gold: #f2c94c;
+  --color-cream: #fdfbf7;
+  --color-black: #1a1a1a;
+  --color-gray: #333333;
+  --color-text: #fdfbf7;
+
+  --font-main: "Poppins", sans-serif;
+
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 4rem;
+
+  --border-radius: 8px;
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: hidden; /* Impede rolagem lateral indesejada no celular */
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--color-black);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+/* --- CONTAINER GERAL --- */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px; /* Padding lateral seguro para celular */
+}
+
+.container-titulo {
+  display: flex;
+  align-items: center;
+}
+
+/* --- TIPOGRAFIA --- */
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5rem; /* Reduzi um pouco para mobile */
+  margin-bottom: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  h1 {
+    font-size: 3.5rem;
+  } /* Aumenta no PC */
+}
+
+h2.section-title {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+h2.section-title::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 4px;
+  background-color: var(--color-red);
+  margin: var(--spacing-sm) auto 0;
+}
+
+.highlight {
+  color: var(--color-red);
+}
+.text-gold {
+  color: var(--color-gold);
+}
+.text-red {
+  color: var(--color-red);
+}
+
+/* --- BOTÕES --- */
+.btn-primary,
+.btn-whts,
+.btn-outline {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: var(--color-red);
+  color: var(--color-cream);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-red-dark);
+  transform: translateY(-2px);
+}
+
+.btn-whts {
+  background-color: #075e54;
+  color: var(--color-cream);
+  width: 100%; /* No mobile fica bom ocupar tudo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-whts:hover {
+  background-color: #128c7e;
+  color: var(--color-cream);
+  transform: translateY(-2px);
+}
+
+.btn-whts i {
+  margin-right: 8px;
+  font-size: 1.2rem;
+}
+
+.btn-outline {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  transform: translateY(-2px);
+}
+
+/* --- HEADER (LAYOUT LIMPO) --- */
+#main-header {
+  padding: 10px 0;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  background-color: rgba(26, 26, 26, 0.98);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Container flexível que alinha as pontas */
+#main-header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px; /* Altura fixa para evitar pulos */
+}
+
+/* LADO ESQUERDO: Logo e Status */
+.container-titulo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo img {
+  height: 50px; /* Controla altura da imagem */
+  width: auto;
+}
+
+.brand-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-text {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-cream);
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+/* LADO DIREITO: Navegação e Ações */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Espaço padrão entre blocos */
+}
+
+/* Links do Menu (Desktop) */
+.nav-links {
+  display: flex;
+  gap: 25px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: var(--color-cream);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.nav-links a:hover {
+  color: var(--color-gold);
+}
+
+/* --- BOTÕES DE AÇÃO (Entrar, Perfil, Carrinho) --- */
+
+/* Container para agrupar Entrar/Perfil e Carrinho */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Botão Entrar */
+.btn-login-header {
+  background: transparent;
+  color: var(--color-cream);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex; /* Flex para alinhar ícone e texto */
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+  height: 40px;
+}
+
+.btn-login-header:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+/* Área do Perfil (Substitui o botão Entrar quando logado) */
+.profile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: var(--transition);
+}
+
+.profile-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.5);
+}
+
+/* Menu Dropdown do Perfil */
+.profile-menu {
+  display: none; /* JS controla */
+  position: absolute;
+  top: 50px; /* Abaixo da bolinha */
+  right: 0;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  width: 180px;
+  padding: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  text-align: right; /* Texto alinhado à direita fica elegante no dropdown */
+}
+
+.profile-menu.active {
+  display: block;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.profile-menu span {
+  display: block;
+  color: var(--color-gold);
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.profile-menu a {
+  display: block;
+  color: #ccc;
+  text-decoration: none;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  border-top: 1px solid #333;
+}
+.profile-menu a:hover {
+  color: #fff;
+}
+
+/* Botão Carrinho */
+.cart-btn {
+  background: transparent;
+  border: 2px solid var(--color-gold);
+  color: var(--color-cream);
+  width: 45px; /* Redondo */
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.cart-btn:hover {
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+.cart-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--color-red);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--color-black);
+}
+
+/* Hamburger */
+.hamburger {
+  display: none; /* Escondido no PC */
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+.hamburger span {
+  width: 25px;
+  height: 3px;
+  background-color: var(--color-cream);
+}
+
+/* --- RESPONSIVIDADE (MOBILE) --- */
+@media (max-width: 768px) {
+  /* No mobile, escondemos os links de texto */
+  .nav-links {
+    display: none; /* O JS vai mudar para flex quando abrir o menu */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+  }
+
+  .nav-links.active {
+    display: flex; /* Classe para JS abrir */
+  }
+
+  .hamburger {
+    display: flex; /* Mostra hamburger no mobile */
+  }
+
+  /* Ajuste de Espaçamento */
+  .nav-right {
+    gap: 10px;
+  }
+
+  /* Esconde o texto "Entrar" no mobile, deixa só o ícone se quiser economizar espaço,
+     ou diminui o padding */
+  .btn-login-header {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .logo img {
+    height: 40px;
+  }
+  .logo-text {
+    font-size: 1rem;
+  }
+  .status-box {
+    display: none;
+  } /* Esconde status no mobile se faltar espaço */
+}
+
+/* --- HERO SECTION --- */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column-reverse; /* Imagem em cima/baixo do texto no mobile */
+  justify-content: center;
+  align-items: center;
+  padding-top: 100px; /* Espaço do header */
+  padding-bottom: 40px;
+  background: linear-gradient(135deg, var(--color-black) 0%, #2a2a2a 100%);
+  text-align: center;
+}
+
+@media (min-width: 769px) {
+  #hero {
+    flex-direction: row; /* Lado a lado no PC */
+    text-align: left;
+    padding-top: 80px;
+  }
+}
+
+#hero .hero-content {
+  flex: 1;
+  width: 100%;
+  padding: 20px;
+  z-index: 2;
+}
+
+@media (min-width: 769px) {
+  #hero .hero-content {
+    padding-left: 10%;
+  }
+}
+
+#hero .hero-image {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* A Imagem do Hambúrguer (Responsiva) */
+.hero-img-real {
+  width: 80%; /* Ocupa 80% da largura do celular */
+  max-width: 320px; /* Não deixa ficar gigante no mobile */
+  height: auto;
+  aspect-ratio: 1 / 1;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
+  animation: flutuar 3s ease-in-out infinite;
+}
+
+@media (min-width: 769px) {
+  .hero-img-real {
+    width: 100%;
+    max-width: 550px; /* Pode crescer mais no PC */
+  }
+}
+
+@keyframes flutuar {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* --- CARDÁPIO GRID --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr; /* 1 coluna no mobile */
+  gap: var(--spacing-lg);
+}
+
+@media (min-width: 600px) {
+  .grid-container {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  background-color: var(--color-gray);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  transition: var(--transition);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+  max-width: 400px; /* Limita largura no mobile */
+  margin: 0 auto; /* Centraliza */
+}
+
+.menu-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: var(--color-gold);
+}
+
+.menu-img {
+  aspect-ratio: 1/1;
+  background-color: #444;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.menu-info {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: space-between;
+}
+.menu-info p {
+  margin-bottom: 15px;
+}
+.menu-info h3 {
+  color: var(--color-gold);
+  margin-bottom: var(--spacing-sm);
+}
+
+.menu-info .price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-cream);
+  margin-top: var(--spacing-sm);
+  display: block;
+  margin-bottom: 15px;
+  margin-top: auto;
+}
+
+.menu-info button {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* --- SOBRE NÓS --- */
+.about-content {
+  display: flex;
+  flex-direction: column; /* Empilhado no mobile */
+  gap: var(--spacing-xl);
+  align-items: center;
+}
+
+@media (min-width: 769px) {
+  .about-content {
+    flex-direction: row;
+  }
+}
+
+.about-text {
+  flex: 1;
+}
+.about-image {
+  flex: 1;
+  width: 100%;
+}
+
+/* --- CONTATO & FORMULÁRIO --- */
+#contact {
+  padding: 60px 0;
+  background-color: #1a1a1a;
+}
+
+.contact-wrapper {
+  display: flex;
+  flex-direction: column; /* Empilhado no mobile */
+  gap: 40px;
+  background-color: var(--color-gray);
+  padding: 20px;
+  border-radius: var(--border-radius);
+}
+
+@media (min-width: 769px) {
+  .contact-wrapper {
+    flex-direction: row;
+    padding: var(--spacing-xl);
+  }
+}
+
+.contact-form {
+  flex: 2;
+}
+
+.contact-info-box {
+  flex: 1;
+  border-top: 1px solid #444;
+  padding-top: 30px;
+}
+
+@media (min-width: 769px) {
+  .contact-info-box {
+    border-top: none;
+    border-left: 1px solid #444;
+    padding-top: 0;
+    padding-left: var(--spacing-lg);
+  }
+}
+
+/* Campos do Formulário */
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Form Row (Rua e Número na mesma linha) */
+.form-row {
+  display: flex;
+  flex-direction: column; /* Empilhado no mobile (facilita digitar) */
+  gap: 0;
+}
+
+@media (min-width: 600px) {
+  .form-row {
+    flex-direction: row;
+    gap: 15px;
+  }
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-gold);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--color-black);
+  border: 1px solid #444;
+  border-radius: var(--border-radius);
+  color: var(--color-text);
+  font-family: var(--font-main);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+/* Área de Endereço Destacada */
+.address-section {
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #444;
+}
+
+/* --- REDES SOCIAIS (Onde Estamos) --- */
+.info-item {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.icon-box {
+  color: var(--color-red);
+  background: rgba(255, 255, 255, 0.05);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.info-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #fff;
+}
+.info-text {
+  color: #ccc;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 25px;
+  align-items: flex-start;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 10px;
+  color: var(--color-cream);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+  transform: translateX(5px);
+}
+
+/* Cores Social Hover */
+#insta:hover {
+  color: #e1306c;
+}
+#face:hover {
+  color: #1877f2;
+}
+#wa:hover {
+  color: #25d366;
+}
+
+/* --- CARRINHO LATERAL (SIDEBAR) --- */
+.cart-sidebar {
+  position: fixed;
+  top: 0;
+  right: -100%; /* Escondido */
+  width: 100%; /* Mobile: Ocupa tela toda */
+  height: 100%;
+  background-color: #1a1a1a;
+  z-index: 2000;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-left: 1px solid #333;
+}
+
+@media (min-width: 480px) {
+  .cart-sidebar {
+    width: 350px; /* PC: Largura fixa */
+    right: -400px;
+  }
+}
+
+.cart-sidebar.open {
+  right: 0;
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.cart-items-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cart-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #252525;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-red);
+  cursor: pointer;
+}
+
+.cart-footer {
+  border-top: 1px solid #333;
+  padding-top: 20px;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.cart-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1999;
+  display: none;
+}
+
+.cart-overlay.open {
+  display: block;
+}
+
+/* --- FOOTER --- */
+footer {
+  background-color: #000;
+  padding: var(--spacing-lg) 0;
+  text-align: center;
+  margin-top: var(--spacing-xl);
+  border-top: 1px solid #222;
+}
+
+/* =========================================
+   AJUSTE ESPECÍFICO PARA COMBOS
+   ========================================= */
+
+/* Deixa o cartão do combo mais largo que o do hambúrguer normal */
+.combo-item {
+  max-width: 600px !important; /* Aumenta de 400px para 600px */
+  border: 1px solid var(--color-gold); /* Destaque extra com borda dourada */
+}
+
+/* Ajusta a imagem para ficar proporcional ao tamanho novo */
+.combo-item .menu-img {
+  height: auto; /* Aumenta a altura da foto (antes era 200px) */
+}
+
+/* Ajuste para telas médias (Tablets/Laptops pequenos) */
+@media (min-width: 769px) {
+  /* Se estiver usando Grid, faz o combo ocupar 2 colunas para caber melhor */
+  .combo-item {
+    grid-column: span 2;
+  }
+}
+
+/* No celular, garantimos que ele não estoure a tela */
+@media (max-width: 768px) {
+  .combo-item {
+    max-width: 100% !important;
+    grid-column: auto; /* Volta ao normal no celular */
+  }
+
+  .combo-item .menu-img {
+    height: auto; /* Altura um pouco menor no celular */
+  }
+}
+/* --- FOOTER COMPLETO --- */
+footer {
+  background-color: #0d0d0d; /* Quase preto, para diferenciar do fundo normal */
+  color: #ccc;
+  padding-top: 60px;
+  padding-bottom: 20px;
+  border-top: 1px solid #333;
+  margin-top: 60px;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+  text-align: left;
+}
+
+.footer-col h3 {
+  color: #fff;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.footer-col h4 {
+  color: var(--color-gold);
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #333;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+
+.footer-links {
+  list-style: none;
+}
+
+.footer-links li {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #ccc;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.footer-links a:hover {
+  color: var(--color-gold);
+  padding-left: 5px; /* Efeitinho de mover para o lado */
+}
+
+/* Ícones de Pagamento */
+.payment-icons {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+/* Barra Final (Legal) */
+.footer-bottom {
+  border-top: 1px solid #222;
+  padding-top: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.legal-text {
+  opacity: 0.6; /* Deixa o texto legal mais discreto */
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+
+/* Ajuste Mobile */
+@media (max-width: 768px) {
+  .footer-content {
+    text-align: center;
+  }
+
+  .payment-icons {
+    justify-content: center;
+  }
+}
+
+/* --- SELETOR DE QUANTIDADE --- */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px; /* Espaço antes do botão Adicionar */
+
+  padding: 5px;
+  border-radius: 5px;
+  width: 100%;
+}
+
+.qty-btn {
+  /* 1. Trava as medidas exatas */
+  width: 35px !important; /* Usei !important para garantir */
+  height: 35px !important;
+  min-width: 35px !important; /* Proíbe ficar menor que isso */
+  max-width: 35px !important; /* Proíbe ficar maior que isso */
+
+  /* 2. Proíbe o flexbox de "amassar" o botão */
+  flex-shrink: 0;
+
+  /* 3. Zera espaços internos que causam deformação */
+  padding: 0;
+  margin: 0;
+
+  /* 4. Estilo Visual */
+  background-color: transparent;
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  border-radius: 50%; /* Faz virar bola */
+  cursor: pointer;
+
+  /* 5. Alinhamento do + e - */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 0; /* Remove altura de linha invisível */
+  transition: 0.2s;
+}
+
+.qty-btn:hover {
+  background-color: var(--color-gold);
+  color: var(--color-black);
+}
+
+.qty-btn-combo {
+  /* 1. Trava as medidas exatas */
+  width: 35px !important; /* Usei !important para garantir */
+  height: 35px !important;
+  min-width: 35px !important; /* Proíbe ficar menor que isso */
+  max-width: 35px !important; /* Proíbe ficar maior que isso */
+
+  /* 2. Proíbe o flexbox de "amassar" o botão */
+  flex-shrink: 0;
+
+  /* 3. Zera espaços internos que causam deformação */
+  padding: 0;
+  margin: 0;
+
+  /* 4. Estilo Visual */
+  background-color: transparent;
+  border: 1px solid #ee4b2b;
+  color: #ee4b2b;
+  border-radius: 50%; /* Faz virar bola */
+  cursor: pointer;
+
+  /* 5. Alinhamento do + e - */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 0; /* Remove altura de linha invisível */
+  transition: 0.2s;
+}
+
+.qty-btn-combo:hover {
+  background-color: red;
+  color: var(--color-black);
+}
+
+.qty-display {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+  width: 30px;
+  text-align: center;
+}
+/* Animação do Pulo e Brilho */
+@keyframes cart-pop {
+  /* 0% - Estado Inicial */
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+    color: var(--color-cream);
+  }
+
+  /* 20% - O Pulo (Rápido e Dourado) */
+  20% {
+    transform: scale(1.2);
+    background-color: var(--color-gold);
+    color: var(--color-black);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 15px var(--color-gold);
+  }
+
+  /* 100% - A Volta (Lenta até o final) */
+  100% {
+    transform: scale(1);
+    background-color: transparent; /* Volta a ficar transparente */
+    color: var(--color-cream); /* Volta a cor do texto original */
+    border-color: var(--color-gold); /* Borda original */
+    box-shadow: none;
+  }
+}
+
+/* Classe da animação */
+.cart-bump {
+  /* 1s de duração garante que a volta (dos 20% aos 100%) seja bem suave */
+  animation: cart-pop 1s ease-out;
+}
+/* --- BOTÕES DE QUANTIDADE (DENTRO DO CARRINHO) --- */
+.cart-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #333;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.cart-qty-controls span {
+  color: #fff;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cart-qty-controls button {
+  background: transparent;
+  border: none;
+  color: var(--color-gold);
+  font-size: 1.1rem;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.cart-qty-controls button:hover {
+  color: #fff;
+  transform: scale(1.2);
+}
+
+/* Destaque para o ícone de lixeira quando for remover */
+.cart-qty-controls button i {
+  font-size: 0.9rem;
+  color: var(--color-red);
+}
+
+/* --- MODAL DE PERSONALIZAÇÃO --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 3000; /* Acima de tudo */
+  display: none; /* Escondido por padrão */
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: #1a1a1a;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh; /* Não ultrapassa a altura da tela */
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #333;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Header com Imagem de Fundo */
+.modal-header {
+  height: 150px;
+  position: relative;
+  background: #000;
+}
+
+.modal-header img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+}
+
+.close-modal {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: auto;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Corpo com Rolagem */
+.modal-body {
+  padding: 20px;
+  overflow-y: auto; /* Permite rolar só o meio */
+  flex: 1;
+}
+
+.modal-section-title {
+  color: var(--color-gold);
+  margin: 20px 0 10px 0;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+}
+
+.required-tag {
+  background: #d93025;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.optional-tag {
+  background: #333;
+  color: #ccc;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Lista de Opções */
+.option-row {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #2a2a2a;
+  cursor: pointer;
+}
+
+.option-row:hover {
+  background: #252525;
+}
+
+.option-row input {
+  margin-right: 15px;
+  transform: scale(1.3); /* Aumenta a bolinha/quadrado */
+  accent-color: var(--color-gold);
+}
+
+.option-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  color: #fff;
+}
+.option-price {
+  color: var(--color-gold);
+  font-weight: bold;
+}
+
+/* Rodapé Fixo */
+.modal-footer {
+  padding: 15px 20px;
+  background: #222;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price-box {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+#modal-total {
+  font-size: 1.3rem;
+  color: var(--color-gold);
+  font-weight: bold;
+}
+/* ==================================================
+   AJUSTES EXCLUSIVOS PARA COMPUTADOR (PC/Desktop)
+   ================================================== */
+@media (min-width: 769px) {
+  /* 1. O Container Pai (Header) */
+  /* Garante que os itens fiquem na linha e o logo não encolha */
+  #main-header .container {
+    display: flex;
+    justify-content: flex-start; /* Alinha tudo à esquerda inicialmente */
+    align-items: center;
+  }
+
+  .container-titulo {
+    flex-shrink: 0; /* Proíbe o logo de ser esmagado */
+    margin-right: 20px;
+  }
+
+  /* 2. A Área da Direita (Menu + Carrinho) */
+  .nav-right {
+    flex: 1; /* MÁGICA: Faz essa área crescer e ocupar TODO o espaço vazio */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Joga o carrinho para a ponta direita */
+  }
+
+  /* 3. O Menu de Links (Início, Cardápio...) */
+  .nav-links {
+    display: flex;
+    gap: 30px;
+
+    /* MÁGICA DO CENTRO: */
+    margin-left: auto; /* Empurra da esquerda */
+    margin-right: auto; /* Empurra da direita (isso centraliza ele no espaço disponível) */
+  }
+
+  /* 4. O Carrinho */
+  .cart-btn {
+    margin-left: 0; /* Remove margens antigas */
+    flex-shrink: 0; /* Não deixa o botão esmagar */
+  }
+
+  /* Esconde o hamburger no PC */
+  .hamburger {
+    display: none;
+  }
+}
+
+/* Botão de Fechar (X) Estilizado */
+.close-cart {
+  /* 1. Forma e Tamanho */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* Faz virar uma bolinha perfeita */
+
+  /* 2. Cores Iniciais */
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.1
+  ); /* Fundo cinza transparente sutil */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
+  color: #fff;
+
+  /* 3. Alinhamento do X */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 4. Tipografia */
+  font-size: 1.8rem;
+  line-height: 1;
+  padding-bottom: 4px; /* Ajuste fino para o X ficar exatamente no meio vertical */
+
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação com "pulo" elástico */
+}
+
+/* Efeito ao passar o mouse (Hover) */
+.close-cart:hover {
+  background-color: var(--color-red); /* Fica vermelho (cor de fechar/perigo) */
+  border-color: var(--color-red);
+  transform: rotate(90deg) scale(1.1); /* Gira 90 graus e cresce um pouco */
+  box-shadow: 0 0 15px rgba(217, 48, 37, 0.5); /* Brilho vermelho suave */
+}
+
+/* Efeito ao clicar (Active) */
+.close-cart:active {
+  transform: scale(0.9); /* Encolhe levemente ao clicar */
+}
+
+/* --- VALIDAÇÃO DE FORMULÁRIO --- */
+.input-error {
+  border-color: #ff4444 !important; /* Borda vermelha */
+  animation: shake 0.3s; /* Treme o campo */
+}
+
+.error-text {
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+/* Animação de tremer */
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+/* --- CORREÇÃO VISUAL DOS COMBOS --- */
+.carousel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+/* No PC, mostra em grade (igual ao menu) */
+@media (min-width: 600px) {
+  .carousel {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(350px, 1fr)
+    ); /* Um pouco mais largo que o menu normal */
+  }
+}
+
+/* Opcional: Se quiser que os combos sejam realmente um carrossel de deslizar no celular */
+/*@media (max-width: 600px) {
+  .carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 20px;
+  }
+
+  .carousel .menu-item {
+    min-width: 85vw;
+    scroll-snap-align: center;
+  }
+} 
+*/
+/* --- PREVENÇÃO DE CLS (Layout Shift) --- */
+
+/* Reserva espaço para o cardápio enquanto carrega */
+#menu-grid {
+  min-height: 600px; /* Altura estimada de uns 2 ou 3 lanches */
+}
+
+/* Reserva espaço para os combos */
+.carousel {
+  min-height: 400px;
+}
+/* --- CHECKBOX RETIRADA NO LOCAL --- */
+
+/* --- CHECKBOX RETIRADA NO LOCAL (Final) --- */
+.pickup-option {
+  margin: 15px 0;
+  background: transparent;
+  border: none;
+  padding: 5px 0;
+}
+
+/* 1. O PAI: Força tudo a ficar na mesma linha */
+.checkbox-container {
+  display: flex !important; /* !important garante que nada quebre isso */
+  flex-direction: row; /* Garante a direção linha */
+  align-items: center; /* Centraliza verticalmente */
+  cursor: pointer;
+  color: var(--color-gold);
+  gap: 10px; /* Espaço entre quadrado e texto */
+}
+
+/* 2. O QUADRADO (Input) */
+.checkbox-container input {
+  -webkit-appearance: none;
+  appearance: none;
+
+  /* Tamanho e Forma */
+  width: 22px;
+  height: 22px;
+  min-width: 22px; /* Trava o tamanho mínimo */
+  border: 2px solid var(--color-gold);
+  border-radius: 6px;
+
+  /* Centraliza o check dentro do quadrado */
+  display: grid;
+  place-content: center;
+
+  margin: 0;
+  cursor: pointer;
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Check marcado */
+.checkbox-container input:checked {
+  background-color: var(--color-gold);
+}
+
+/* O símbolo "V" */
+.checkbox-container input::before {
+  content: "✔";
+  color: var(--color-black);
+  font-size: 14px;
+  font-weight: 900;
+  transform: scale(0);
+  transition: 0.2s transform ease-in-out;
+}
+
+.checkbox-container input:checked::before {
+  transform: scale(1);
+}
+
+/* 3. O TEXTO */
+.checkbox-container .label-text {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+
+  /* Ajuste fino de altura */
+  position: relative;
+  top: 2px; /* Ajuste aqui se precisar subir ou descer */
+}
+
+/* Remove check padrão antigo se existir */
+.checkmark {
+  display: none;
+}
+
+/* 4. ANIMAÇÃO DE BLOQUEIO */
+.address-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+  transition: all 0.3s ease;
+}
+
+.address-disabled input {
+  background-color: #222 !important;
+  color: #555 !important;
+  border-color: #333 !important;
+}
+
+/* --- STATUS DE FUNCIONAMENTO (Aberto/Fechado) --- */
+
+/* Ajuste do container do logo para empilhar o texto */
+.brand-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 10px;
+}
+
+.status-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  margin-top: -5px; /* Aproxima do título */
+  font-weight: 500;
+}
+
+/* A Bolinha */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+/* Estilo Aberto (Verde Neon) */
+.status-open .status-dot {
+  background-color: #2ecc71;
+  box-shadow: 0 0 8px #2ecc71; /* Brilho */
+  animation: pulse-green 2s infinite;
+}
+
+.status-open .status-text {
+  color: #2ecc71;
+}
+
+/* Estilo Fechado (Vermelho) */
+.status-closed .status-dot {
+  background-color: #e74c3c;
+  box-shadow: 0 0 8px #e74c3c;
+  animation: pulse-red 2s infinite;
+}
+
+.status-closed .status-text {
+  color: #e74c3c;
+}
+
+/* Animação de "Respiração" da bolinha verde */
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(231, 76, 60, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+/* Ajuste Mobile para não quebrar o header */
+@media (max-width: 768px) {
+  .brand-wrapper {
+    margin-left: 5px;
+  }
+  .status-box {
+    font-size: 0.75rem;
+  }
+}
+
+/* --- BOTÃO LOGIN HEADER --- */
+.btn-login-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--color-cream);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-login-outline:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+/* --- AVATAR PERFIL --- */
+.profile-wrapper {
+  position: relative;
+}
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: 0.2s;
+}
+.avatar-circle:hover {
+  transform: scale(1.1);
+}
+
+/* Dropdown Menu */
+.profile-dropdown {
+  display: none; /* JS controla isso */
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background-color: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  width: 200px;
+  padding: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1002;
+}
+.profile-dropdown.active {
+  display: block;
+}
+.dropdown-header {
+  margin-bottom: 10px;
+}
+.dropdown-header strong {
+  display: block;
+  color: #fff;
+}
+.dropdown-header small {
+  color: #888;
+}
+.profile-dropdown hr {
+  border: 0;
+  border-top: 1px solid #444;
+  margin: 10px 0;
+}
+.profile-dropdown a {
+  display: block;
+  color: #ccc;
+  text-decoration: none;
+  padding: 8px 0;
+  font-size: 0.95rem;
+  transition: 0.2s;
+}
+.profile-dropdown a:hover {
+  color: var(--color-gold);
+  padding-left: 5px;
+}
+
+/* --- MODAL AUTH --- */
+.auth-modal {
+  max-width: 400px;
+  padding: 30px;
+  background: #1a1a1a;
+}
+.auth-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+}
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #666;
+  padding: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn.active {
+  color: var(--color-gold);
+  border-bottom-color: var(--color-gold);
+  font-weight: bold;
+}
+.full-width {
+  width: 100%;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-3 {
+  margin-top: 1rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+/* --- CHECKOUT FORM --- */
+.checkout-wrapper {
+  background-color: #222;
+  padding: 25px;
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+.address-box {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+.address-box h4 {
+  color: var(--color-gold);
+  margin-bottom: 15px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+}
+.actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.btn-lg {
+  flex: 1; /* Ocupa espaço principal */
+  font-size: 1.1rem;
+  padding: 15px;
+}
+.btn-whts-icon {
+  background-color: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-whts-icon:hover {
+  background-color: #128c7e;
+}
+.secure-text {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 10px;
+}
+/* =========================================
+   [NOVO] ESTILOS DE AUTENTICAÇÃO E PERFIL
+   Cole isso no final do seu arquivo style.css
+   ========================================= */
+
+/* --- 1. BOTÃO DE LOGIN (NO HEADER) --- */
+.btn-login-header {
+  background: transparent;
+  color: var(--color-cream);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.btn-login-header:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+/* --- 2. ÁREA DO PERFIL (QUANDO LOGADO) --- */
+.profile-container {
+  position: relative;
+  margin-left: 30px;
+}
+
+.profile-icon {
+  width: 38px;
+  height: 38px;
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: var(--transition);
+}
+
+.profile-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.5);
+}
+
+/* Menu Dropdown do Perfil */
+.profile-menu {
+  display: none; /* O JS controla isso com a classe .active */
+  position: absolute;
+  top: 50px;
+  right: -20px; /* Alinha com a direita do ícone */
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  width: 180px;
+  padding: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  z-index: 1100;
+}
+
+.profile-menu.active {
+  display: block;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.profile-menu span {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--color-gold);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-menu hr {
+  border: 0;
+  border-top: 1px solid #444;
+  margin: 10px 0;
+}
+
+.profile-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: block;
+  padding: 8px 0;
+  transition: 0.2s;
+  border-radius: 4px;
+}
+
+.profile-menu a:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-red);
+}
+
+/* --- 3. MODAL DE LOGIN/CADASTRO --- */
+/* Ajuste específico para o modal de auth ser menor que o de produto */
+.auth-content {
+  max-width: 400px;
+  min-height: 450px;
+  padding: 30px;
+  background-color: #1a1a1a;
+}
+
+/* Abas (Login | Cadastro) */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #666;
+  padding: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: 0.3s;
+  font-family: var(--font-main);
+}
+
+.tab-btn:hover {
+  color: #ccc;
+}
+
+.tab-btn.active {
+  color: var(--color-gold);
+  border-bottom-color: var(--color-gold);
+  font-weight: bold;
+}
+
+/* Formulários dentro do Modal */
+.auth-form {
+  display: none; /* Esconde todos por padrão */
+  animation: fadeIn 0.3s;
+}
+
+.auth-form.active {
+  display: block; /* Mostra apenas o ativo */
+}
+
+.auth-form h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+/* Utilitários para os forms */
+.full-width {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-3 {
+  margin-top: 1rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Detalhes (Endereço Opcional) */
+details summary {
+  color: var(--color-gold);
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  list-style: none; /* Remove triângulo padrão em alguns browsers */
+}
+details summary:hover {
+  text-decoration: underline;
+}
+
+/* --- 4. PÁGINA DE LOGIN DEDICADA (login.html) --- */
+body.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  /* Garante que a imagem de fundo cubra tudo */
+  background: url("../assets/principal.jpg") no-repeat center center;
+  background-size: cover;
+  position: relative;
+}
+
+/* Camada escura sobre a imagem de fundo */
+body.login-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 0;
+}
+
+.login-overlay {
+  position: relative;
+  z-index: 1; /* Fica acima da camada escura */
+  background-color: rgba(26, 26, 26, 0.9);
+  padding: 40px;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+  border: 1px solid #444;
+  backdrop-filter: blur(10px);
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* --- ANIMAÇÃO SIMPLES --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.address-card {
+  background: #222;
+  border: 1px solid #444;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.3s;
+}
+
+.address-card.active {
+  border-color: #2ecc71; /* Verde para ativo */
+  background: rgba(46, 204, 113, 0.05);
+}
+
+.address-card strong {
+  color: #fff;
+}
+.address-card small {
+  color: #aaa;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+/* --- LISTA DE PEDIDOS --- */
+.orders-list {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: #151515;
+  min-height: 300px;
+}
+
+.order-card {
+  background-color: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: 0.2s;
+}
+.order-card:hover {
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+/* Cabeçalho do Card (ID, Data e Status) */
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid #333;
+}
+.order-id {
+  display: block;
+  font-weight: bold;
+  color: #fff;
+  font-size: 0.95rem;
+}
+.order-date {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Badges de Status */
+.status-badge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.st-received {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  border: 1px solid #555;
+}
+.st-prep {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f1c40f;
+  border: 1px solid #f1c40f;
+}
+.st-delivery {
+  background: rgba(230, 126, 34, 0.15);
+  color: #e67e22;
+  border: 1px solid #e67e22;
+}
+.st-done {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid #2ecc71;
+}
+.st-canceled {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid #e74c3c;
+}
+
+/* Corpo (Lista de Itens) */
+.order-body {
+  padding: 15px;
+}
+.order-item-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #ddd;
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 5px;
+}
+.order-item-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Rodapé (Total) */
+.order-footer {
+  padding: 12px 15px;
+  background-color: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #333;
+}
+.order-total {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--color-gold);
+}
+/* --- VALIDAÇÃO DE SENHA --- */
+.password-strength {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 5px;
+  height: 15px; /* Reserva espaço */
+  transition: 0.3s;
+}
+
+.strength-weak {
+  color: #ff4444;
+}
+.strength-medium {
+  color: #f1c40f;
+}
+.strength-strong {
+  color: #2ecc71;
+}
+
+/* --- CHAT WIDGET --- */
+.chat-widget {
+  position: fixed;
+  bottom: 0;
+  left: auto; /* Canto Inferior Esquerdo */
+  right: 20px;
+  width: 300px;
+  background-color: #1a1a1a;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  z-index: 5000;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+/* Estado Minimizado (Escondido pra baixo) */
+.chat-widget.minimized {
+  transform: translateY(calc(100% - 48px)); /* Altura do corpo + footer */
+}
+
+/* Cabeçalho */
+.chat-header {
+  background-color: var(--color-red);
+  color: white;
+  padding: 12px 15px;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+/* Corpo */
+.chat-body {
+  height: 280px;
+  padding: 15px;
+  overflow-y: auto;
+  background-color: #111;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Mensagens */
+.msg {
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  font-size: 0.9rem;
+  word-wrap: break-word;
+}
+
+.msg-user {
+  background-color: var(--color-gold);
+  color: #000;
+  align-self: flex-end; /* Direita */
+  border-bottom-right-radius: 2px;
+}
+
+.msg-admin {
+  background-color: #333;
+  color: #fff;
+  align-self: flex-start; /* Esquerda */
+  border-bottom-left-radius: 2px;
+  border: 1px solid #444;
+}
+
+/* Footer */
+.chat-footer {
+  padding: 10px;
+  background-color: #222;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #333;
+}
+
+.chat-footer input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid #444;
+  background: #000;
+  color: #fff;
+  outline: none;
+}
+
+.chat-footer button {
+  background: transparent;
+  border: none;
+  color: var(--color-gold);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.chat-welcome {
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 10px;
+}
+/* --- PAGAMENTO --- */
+.payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.payment-option input {
+  display: none; /* Esconde a bolinha padrão */
+}
+
+.payment-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #ccc;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 0.9rem;
+}
+
+.payment-option input:checked + .payment-box {
+  background-color: rgba(242, 201, 76, 0.1);
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  font-weight: bold;
+}
+
+.payment-box:hover {
+  border-color: #666;
+}
+/* --- TOAST NOTIFICATIONS (AVISOS) --- */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999; /* Acima de tudo, inclusive modais */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  min-width: 250px;
+  max-width: 350px;
+  background-color: #222;
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  border-left: 5px solid #fff;
+  opacity: 0;
+  transform: translateX(100%);
+  animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 4s; /* Entra e sai sozinho */
+}
+
+/* Tipos de Toast */
+.toast.success {
+  border-left-color: #2ecc71;
+}
+.toast.success i {
+  color: #2ecc71;
+}
+
+.toast.error {
+  border-left-color: #e74c3c;
+}
+.toast.error i {
+  color: #e74c3c;
+}
+
+.toast.warning {
+  border-left-color: #f1c40f;
+}
+.toast.warning i {
+  color: #f1c40f;
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
