@@ -137,32 +137,45 @@ function checkLoginState() {
   const profileArea = document.getElementById("user-profile-area");
   const nameDisplay = document.getElementById("user-name-display");
 
-  // Tenta preencher o formulário com dados salvos
+  // [NOVO] Pega a referência do link admin
+  const adminLink = document.getElementById("admin-link");
+
+  // Auto-preenchimento (Nome e WhatsApp)
   if (user.name) {
     const nameInput = document.getElementById("name");
     if (nameInput && !nameInput.value) nameInput.value = user.name;
   }
   if (user.whatsapp) {
     const phoneInput = document.getElementById("phone");
-    // Só preenche se o campo estiver vazio para não atrapalhar se o usuário já digitou algo
     if (phoneInput && !phoneInput.value) phoneInput.value = user.whatsapp;
   }
 
+  // Lógica de Exibição (Logado vs Deslogado)
   if (token && user.name) {
     if (btnLogin) btnLogin.style.display = "none";
-    if (profileArea) profileArea.style.display = "block";
+    if (profileArea) profileArea.style.display = "flex"; // 'flex' para alinhar bolinha
     if (nameDisplay) nameDisplay.innerText = `Olá, ${user.name.split(" ")[0]}`;
+
+    // [NOVO] Lógica do Botão Admin
+    if (adminLink) {
+      if (user.role === "admin" || user.role === "super_admin") {
+        adminLink.style.display = "block"; // Mostra se for chefe
+      } else {
+        adminLink.style.display = "none"; // Esconde se for cliente
+      }
+    }
+
+    // Busca endereço ativo
+    if (user.id) {
+      fetchAddresses().then((list) => preencherCheckoutComAtivo(list));
+    }
   } else {
+    // Deslogado
     if (btnLogin) btnLogin.style.display = "flex";
     if (profileArea) profileArea.style.display = "none";
-  }
-  if (token && user.name) {
-    // ...
-    // Adicione isto para puxar o endereço ativo sempre que carregar a página logado
-    fetchAddresses().then((list) => preencherCheckoutComAtivo(list));
+    if (adminLink) adminLink.style.display = "none"; // Garante que suma
   }
 }
-
 function openAuthModal() {
   document.getElementById("modal-auth").style.display = "flex";
 }
@@ -476,7 +489,12 @@ function abrirModalProduto(produto, qtd, qtdId) {
     produto: produto,
     qtd: qtd,
     qtdIdCard: qtdId,
-    selecoes: { carnes: [], adicionais: [], acompanhamentos: [], bebidas: [] },
+    selecoes: {
+      carnes: [],
+      adicionais: [],
+      acompanhamentos: [],
+      bebidas: [],
+    },
     precoBase: produto.price,
     precoTotal: produto.price,
   };
@@ -1103,30 +1121,98 @@ if (formNewAddr) {
     }
   });
 }
-
+let ordersInterval = null;
 // --- HISTÓRICO DE PEDIDOS ---
 
 async function abrirHistoricoPedidos() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  if (!user.id) return showToast("Faça login para ver seus pedidos.");
+  if (!user.id) return showToast("Faça login para ver.", "warning");
 
   const modal = document.getElementById("modal-orders");
-  const container = document.getElementById("orders-list-container");
+  const cont = document.getElementById("orders-list-container");
 
   modal.style.display = "flex";
-  toggleProfileMenu(); // Fecha o menu do perfil se estiver aberto
+  toggleProfileMenu();
 
-  container.innerHTML =
+  // Mostra loading apenas na abertura inicial
+  cont.innerHTML =
     '<div class="loading-spinner" style="margin:20px auto;"></div>';
 
-  const pedidos = await fetchMyOrders();
-  renderizarPedidos(pedidos);
+  // Função interna que busca e desenha (será chamada repetidamente)
+  const atualizarLista = async () => {
+    const pedidos = await fetchMyOrders();
+
+    if (!pedidos.length) {
+      cont.innerHTML =
+        '<p style="text-align:center; padding:20px; color:#888;">Nenhum pedido encontrado.</p>';
+      return;
+    }
+
+    // Renderiza a lista
+    cont.innerHTML = pedidos
+      .map((p) => {
+        const date = new Date(p.date_created).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        return `
+            <div class="order-card">
+                <div class="order-header">
+                    <span>#${p.id} - ${date}</span>
+                    <span class="status-badge st-${getStatusClass(p.status)}">${
+          p.status
+        }</span>
+                </div>
+                <div class="order-body">
+                    ${p.items
+                      .map(
+                        (i) =>
+                          `<div class="order-item-row">
+                            <span>${i.quantity}x ${i.product.name}</span>
+                            <span>R$ ${i.price_at_time.toFixed(2)}</span>
+                         </div>`
+                      )
+                      .join("")}
+                </div>
+                <div class="order-footer">
+                    <span>Total:</span>
+                    <span class="order-total">R$ ${p.total_price
+                      .toFixed(2)
+                      .replace(".", ",")}</span>
+                </div>
+            </div>`;
+      })
+      .join("");
+  };
+
+  // 1. Chama imediatamente para não esperar 2s na primeira vez
+  await atualizarLista();
+
+  // 2. Inicia o Loop (Polling) a cada 2 segundos
+  if (ordersInterval) clearInterval(ordersInterval); // Segurança
+  ordersInterval = setInterval(atualizarLista, 2000);
 }
 
 function fecharModalPedidos() {
   document.getElementById("modal-orders").style.display = "none";
+
+  // PARAR O RELOAD QUANDO FECHAR (Importante!)
+  if (ordersInterval) {
+    clearInterval(ordersInterval);
+    ordersInterval = null;
+  }
 }
 
+function getStatusClass(st) {
+  if (st === "Recebido") return "received";
+  if (st === "Em Preparo") return "prep";
+  if (st === "Saiu para Entrega") return "delivery";
+  if (st === "Concluído") return "done";
+  return "canceled";
+}
 function renderizarPedidos(lista) {
   const container = document.getElementById("orders-list-container");
   container.innerHTML = "";
@@ -1216,7 +1302,10 @@ function getStatusConfig(status) {
     case "Concluído":
       return { css: "st-done", icon: '<i class="fa-solid fa-check"></i>' };
     case "Cancelado":
-      return { css: "st-canceled", icon: '<i class="fa-solid fa-xmark"></i>' };
+      return {
+        css: "st-canceled",
+        icon: '<i class="fa-solid fa-xmark"></i>',
+      };
     default:
       return { css: "", icon: "" };
   }

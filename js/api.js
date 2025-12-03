@@ -87,6 +87,7 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       },
     },
     items: itemsFormatados,
+    payment_method: frontData.payment_method,
   };
 
   try {
@@ -391,5 +392,83 @@ export async function sendAdminReply(userId, text) {
     return res.ok;
   } catch (e) {
     return false;
+  }
+}
+
+// ... (outras funções) ...
+
+// --- ADMIN: PRODUTOS ---
+
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      headers: getAuthHeader(), // NÃO coloque Content-Type aqui, o navegador põe automático para FormData
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Erro no upload");
+    const data = await res.json();
+    return data.url; // Retorna a URL da imagem salva
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
+
+export async function createProduct(productData) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/menu`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeader() },
+      body: JSON.stringify(productData),
+    });
+    return res.ok;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+// ... (código anterior) ...
+
+export async function updateProduct(id, productData) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/menu/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...getAuthHeader() },
+      body: JSON.stringify(productData),
+    });
+    return res.ok;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+export async function deleteProduct(id, password) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/menu/${id}`, {
+      method: "DELETE",
+      // Agora o DELETE tem corpo (body) com a senha
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ password: password }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Erro ao deletar");
+    }
+    return true;
+  } catch (e) {
+    console.error(e);
+    // Retorna o erro para o admin.js mostrar no alert
+    return { error: e.message };
   }
 }
