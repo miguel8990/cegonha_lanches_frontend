@@ -12,12 +12,15 @@ import {
   fetchMyOrders,
   getChatMessages,
   sendChatMessage,
+  fetchPublicCoupons,
 } from "./api.js";
 
 // Estado Global
 let carrinho = [];
 let menuGlobal = [];
 let itemEmPersonalizacao = null;
+let cuponsDisponiveis = [];
+let cupomSelecionado = null; // Objeto do cupom
 
 window.showToast = function (message, type = "info") {
   const container = document.getElementById("toast-container");
@@ -53,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Verifica Login ao carregar
   checkLoginState();
   initAuthModalLogic();
+  initCoupons();
 
   // Fecha modais ao clicar fora
   // Fecha modais e menus ao clicar fora
@@ -384,6 +388,22 @@ function atualizarCarrinhoUI() {
   if (contador) contador.innerText = totalItens;
   if (totalSpan)
     totalSpan.innerText = `R$ ${total.toFixed(2).replace(".", ",")}`;
+
+  renderizarCupons();
+
+  // Se o total caiu e tinha cupom selecionado inválido, remove ele
+  const novoTotal = carrinho.reduce(
+    (acc, item) => acc + item.preco * item.quantity,
+    0
+  );
+  if (cupomSelecionado && novoTotal < cupomSelecionado.min_purchase) {
+    cupomSelecionado = null;
+    atualizarVisualDesconto();
+    showToast("Cupom removido: Valor mínimo não atingido.", "warning");
+  } else if (cupomSelecionado) {
+    // Recalcula o valor do desconto se o total mudou
+    atualizarVisualDesconto();
+  }
 }
 
 function toggleCart(forceOpen = false) {
@@ -876,6 +896,7 @@ function initContactForm() {
       resumoCarrinho: resumoTexto,
       total: total,
       cartItems: carrinho,
+      coupon_code: cupomSelecionado ? cupomSelecionado.code : null,
     };
 
     // Envia
@@ -1458,3 +1479,120 @@ document.querySelectorAll('input[name="paymentMethod"]').forEach((radio) => {
     if (e.target.value !== "cash" && box) box.style.display = "none";
   });
 });
+
+// --- LÓGICA DE CUPONS ---
+
+async function initCoupons() {
+  cuponsDisponiveis = await fetchPublicCoupons();
+  renderizarCupons();
+}
+
+function renderizarCupons() {
+  const container = document.getElementById("coupons-container");
+  if (!container) return;
+
+  if (cuponsDisponiveis.length === 0) {
+    container.innerHTML =
+      '<p style="color:#666; font-size:0.9rem;">Nenhum cupom disponível no momento.</p>';
+    return;
+  }
+
+  // Calcula total atual do carrinho
+  const totalCarrinho = carrinho.reduce(
+    (acc, item) => acc + item.preco * item.quantity,
+    0
+  );
+
+  container.innerHTML = cuponsDisponiveis
+    .map((c) => {
+      let isMinimoAtingido = totalCarrinho >= c.min_purchase;
+      const disabledClass = isMinimoAtingido ? "" : "disabled";
+      const titleAttr = isMinimoAtingido
+        ? ""
+        : `Mínimo de R$ ${c.min_purchase.toFixed(2)}`;
+
+      // Texto do desconto
+      const descTexto =
+        c.discount_percent > 0
+          ? `${c.discount_percent}% OFF`
+          : `R$ ${c.discount_fixed.toFixed(2)} OFF`;
+
+      return `
+            <label class="coupon-wrapper" title="${titleAttr}">
+                <input type="radio" name="selectedCoupon" value="${c.code}" 
+                    class="coupon-option" 
+                    ${!isMinimoAtingido ? "disabled" : ""}
+                    onchange="selecionarCupom('${c.code}')">
+                
+                <div class="coupon-card-ui ${disabledClass}">
+                    <span class="cp-code">${c.code}</span>
+                    <span class="cp-desc">${descTexto}</span>
+                    ${
+                      c.min_purchase > 0
+                        ? `<span class="cp-min">Mín. R$ ${c.min_purchase.toFixed(
+                            2
+                          )}</span>`
+                        : ""
+                    }
+                </div>
+            </label>
+        `;
+    })
+    .join("");
+}
+
+// Torna global para o HTML acessar
+window.selecionarCupom = function (code) {
+  const cupom = cuponsDisponiveis.find((c) => c.code === code);
+  const totalCarrinho = carrinho.reduce(
+    (acc, item) => acc + item.preco * item.quantity,
+    0
+  );
+
+  if (!cupom) return;
+
+  // Validação Frontend (Dupla checagem)
+  if (totalCarrinho < cupom.min_purchase) {
+    showToast(
+      `Valor mínimo para este cupom: R$ ${cupom.min_purchase.toFixed(2)}`,
+      "warning"
+    );
+    // Desmarca
+    document.querySelector(`input[value="${code}"]`).checked = false;
+    cupomSelecionado = null;
+    atualizarVisualDesconto();
+    return;
+  }
+
+  cupomSelecionado = cupom;
+  atualizarVisualDesconto();
+  showToast(`Cupom ${code} aplicado!`, "success");
+};
+
+function atualizarVisualDesconto() {
+  const display = document.getElementById("discount-display");
+  const valSpan = document.getElementById("discount-value");
+
+  if (!cupomSelecionado) {
+    display.style.display = "none";
+    return;
+  }
+
+  const totalCarrinho = carrinho.reduce(
+    (acc, item) => acc + item.preco * item.quantity,
+    0
+  );
+  let desconto = 0;
+
+  if (cupomSelecionado.discount_percent > 0) {
+    desconto = totalCarrinho * (cupomSelecionado.discount_percent / 100);
+  } else {
+    desconto = cupomSelecionado.discount_fixed;
+  }
+
+  // Garante que não desconte mais que o total
+  if (desconto > totalCarrinho) desconto = totalCarrinho;
+
+  valSpan.innerText = `- R$ ${desconto.toFixed(2).replace(".", ",")}`;
+  display.style.display = "block";
+}

@@ -1,6 +1,6 @@
+// site/js/admin.js
 import {
   fetchAdminMenu,
-  fetchMenu,
   toggleAvailability,
   fetchAdminOrders,
   updateOrderStatus,
@@ -11,13 +11,21 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  fetchCoupons,
+  createCoupon,
+  deleteCoupon,
+  fetchUsersList,
 } from "./api.js";
 
+// --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
 let chatInterval = null;
+let produtoEmEdicaoId = null; // null = criando, número = editando
+let idParaDeletar = null; // Para o modal de segurança
 
-// 1. INICIALIZAÇÃO
+// --- 1. Inicialização ---
 document.addEventListener("DOMContentLoaded", () => {
+  // Verifica se é admin
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   if (!user.role || (user.role !== "admin" && user.role !== "super_admin")) {
     alert("Acesso negado.");
@@ -25,19 +33,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Carrega dados iniciais
   carregarPedidosAdmin();
   carregarMenuAdmin();
 
-  // Exports globais para o HTML usar
-  window.openProductModal = openProductModal;
-  window.closeProductModal = closeProductModal;
-  window.addDetailRow = addDetailRow;
-  window.removeDetailRow = removeDetailRow;
-
-  setInterval(carregarPedidosAdmin, 15000);
+  // Inicia Polling (atualização automática)
+  setInterval(carregarPedidosAdmin, 15000); // Pedidos a cada 15s
   setInterval(() => {
-    if (document.getElementById("panel-orders").classList.contains("active"))
-      carregarPedidosAdmin();
+    // Chat atualiza apenas se a aba estiver aberta
     if (document.getElementById("panel-chat").classList.contains("active")) {
       carregarListaConversas();
       if (chatUserIdAtivo) carregarChatAtivo(chatUserIdAtivo);
@@ -45,15 +48,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 5000);
 });
 
-// ... (Funções switchPanel, adminLogout, carregarPedidosAdmin, renderOrderCard, mudarStatus mantidas iguais) ...
-// VOU COLOCAR APENAS AS FUNÇÕES QUE MUDARAM ABAIXO PARA ECONOMIZAR ESPAÇO
-// MAS NO SEU ARQUIVO, MANTENHA AS FUNÇÕES DE PEDIDOS E CHAT.
+// =============================================================================
+//  GESTÃO DE PAINÉIS E NAVEGAÇÃO
+// =============================================================================
 
 window.switchPanel = function (panelId) {
+  // Esconde todas as seções
   document
     .querySelectorAll(".panel-section")
     .forEach((el) => el.classList.remove("active"));
+  // Mostra a desejada
   document.getElementById(`panel-${panelId}`).classList.add("active");
+
+  // Atualiza menu lateral
   document
     .querySelectorAll(".sidebar-menu button")
     .forEach((btn) => btn.classList.remove("active"));
@@ -61,7 +68,6 @@ window.switchPanel = function (panelId) {
 };
 
 window.adminLogout = function () {
-  // Adiciona confirmação simples do navegador
   if (confirm("Tem certeza que deseja sair do Painel Administrativo?")) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -69,24 +75,33 @@ window.adminLogout = function () {
   }
 };
 
+// =============================================================================
+//  ABA 1: PEDIDOS
+// =============================================================================
+
 window.carregarPedidosAdmin = async function () {
   const container = document.getElementById("admin-orders-list");
   const btn = document.querySelector("#panel-orders .btn-outline");
+
+  // Feedback visual no botão
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> ...';
 
   const pedidos = await fetchAdminOrders();
+
   container.innerHTML = pedidos.length
     ? pedidos.map((p) => renderOrderCard(p)).join("")
-    : "<p>Nenhum pedido.</p>";
+    : "<p>Nenhum pedido hoje.</p>";
+
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
 };
 
-// ... (renderOrderCard e mudarStatus continuam iguais, se precisar repito) ...
 function renderOrderCard(p) {
   const time = new Date(p.date_created).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  // Botões Dinâmicos conforme Status
   let botoes = "";
   if (p.status === "Recebido")
     botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Em Preparo')">Aceitar 🔥</button>`;
@@ -94,395 +109,54 @@ function renderOrderCard(p) {
     botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Saiu para Entrega')">Enviar 🛵</button>`;
   else if (p.status === "Saiu para Entrega")
     botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Concluído')">Concluir ✅</button>`;
+
+  // Botão Cancelar (disponível se não estiver concluído ou cancelado)
   if (p.status !== "Concluído" && p.status !== "Cancelado")
     botoes += ` <button class="btn-small btn-cancel" onclick="mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
 
-  return `<div class="admin-order-card status-${p.status.replace(/ /g, ".")}">
-        <div class="card-header"><span class="card-user">#${p.id} - ${
-    p.customer_name || "Cli"
-  }</span><span class="card-time">${time}</span></div>
-        <div class="card-items">${p.items
-          .map(
-            (i) =>
-              `<div><strong>${i.quantity}x ${i.product.name}</strong></div>`
-          )
-          .join("")}</div>
-        <div style="font-size:0.85rem; margin:10px 0;">📍 ${p.street}, ${
-    p.number
-  }<br>💳 <strong>${
-    p.payment_method
-  }</strong><br><span style="color:gold">R$ ${p.total_price.toFixed(
-    2
-  )}</span></div>
-        <div class="card-actions">${botoes}</div><div style="text-align:right; font-size:0.8rem; color:#666; margin-top:5px;">${
-    p.status
-  }</div>
+  // Itens do Pedido
+  const itemsHtml = p.items
+    .map((i) => `<div><strong>${i.quantity}x ${i.product.name}</strong></div>`)
+    .join("");
+
+  return `
+    <div class="admin-order-card status-${p.status.replace(/ /g, ".")}">
+        <div class="card-header">
+            <span class="card-user">#${p.id} - ${
+    p.customer_name || "Cliente"
+  }</span>
+            <span class="card-time">${time}</span>
+        </div>
+        <div class="card-items">${itemsHtml}</div>
+        <div style="font-size:0.85rem; margin:10px 0;">
+            📍 ${p.street}, ${p.number}<br>
+            💳 <strong>${p.payment_method}</strong><br>
+            <span style="color:gold">R$ ${p.total_price.toFixed(2)}</span>
+        </div>
+        <div class="card-actions">${botoes}</div>
+        <div style="text-align:right; font-size:0.8rem; color:#666; margin-top:5px;">${
+          p.status
+        }</div>
     </div>`;
 }
 
 window.mudarStatus = async function (id, novo) {
-  if (confirm(`Mudar para ${novo}?`)) {
+  if (confirm(`Mudar status do pedido #${id} para '${novo}'?`)) {
     await updateOrderStatus(id, novo);
     carregarPedidosAdmin();
   }
 };
 
-// --- GESTÃO DE CARDÁPIO ---
+// =============================================================================
+//  ABA 2: CARDÁPIO
+// =============================================================================
+
 window.carregarMenuAdmin = async function () {
   const tbody = document.getElementById("admin-menu-list");
   const produtos = await fetchAdminMenu();
-  if (produtos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4">Vazio</td></tr>';
-    return;
-  }
-  tbody.innerHTML = produtos
-    .map(
-      (p) => `
-        <tr>
-            <td>${p.name}</td><td>R$ ${p.price.toFixed(2)}</td>
-            <td style="text-align:center;"><i class="toggle-switch fa-solid ${
-              p.is_available ? "fa-toggle-on on" : "fa-toggle-off off"
-            }" onclick="toggleProd(${
-        p.id
-      })" style="font-size:1.5rem; cursor:pointer;"></i></td>
-            <td><button class="btn-small"><i class="fa-solid fa-pen"></i></button></td>
-        </tr>`
-    )
-    .join("");
-};
-
-window.toggleProd = async function (id) {
-  await toggleAvailability(id);
-  carregarMenuAdmin();
-};
-
-// --- FUNÇÕES GLOBAIS DE CHAT (MANTIDAS) ---
-window.carregarListaConversas = async function () {
-  const lista = await fetchAdminConversations();
-  document.getElementById("chat-users-list").innerHTML = lista
-    .map(
-      (u) => `
-        <div class="chat-user-item ${
-          chatUserIdAtivo === u.user_id ? "active" : ""
-        }" onclick="selecionarChat(${u.user_id}, '${u.user_name}')">
-            <div class="user-avatar-small">${u.user_name[0]}</div>
-            <div style="flex:1"><div>${
-              u.user_name
-            }</div><small style="color:#888">${new Date(u.last_interaction)
-        .toLocaleTimeString()
-        .slice(0, 5)}</small></div>
-        </div>`
-    )
-    .join("");
-};
-window.selecionarChat = function (id, nome) {
-  chatUserIdAtivo = id;
-  document.getElementById("admin-chat-input-area").style.display = "flex";
-  carregarChatAtivo(id);
-  carregarListaConversas();
-};
-async function carregarChatAtivo(uid) {
-  const msgs = await fetchAdminUserHistory(uid);
-  document.getElementById("admin-chat-messages").innerHTML = msgs
-    .map(
-      (m) =>
-        `<div class="msg ${m.is_from_admin ? "msg-admin" : "msg-user"}">${
-          m.message
-        }</div>`
-    )
-    .join("");
-}
-window.enviarRespostaAdmin = async function () {
-  const inp = document.getElementById("admin-chat-input");
-  if (!inp.value.trim() || !chatUserIdAtivo) return;
-  if (await sendAdminReply(chatUserIdAtivo, inp.value.trim())) {
-    inp.value = "";
-    carregarChatAtivo(chatUserIdAtivo);
-  }
-};
-window.handleAdminChatKey = function (e) {
-  if (e.key === "Enter") enviarRespostaAdmin();
-};
-
-// ========================================================
-// GESTÃO DE PRODUTOS (CRIAR, EDITAR, EXCLUIR)
-// ========================================================
-
-let produtoEmEdicaoId = null; // Controla se é edição ou novo
-
-// Abre modal para CRIAR
-function openProductModal() {
-  produtoEmEdicaoId = null; // Modo Criação
-
-  // Reset Visual
-  document.getElementById("modal-product-admin").style.display = "flex";
-  document.getElementById("form-add-product").reset();
-  document.querySelector("#modal-product-admin h3").innerText = "Novo Produto";
-  document.querySelector('#form-add-product button[type="submit"]').innerText =
-    "Cadastrar Produto";
-
-  // Reset Imagem
-  document.getElementById("preview-img").style.display = "none";
-  document.getElementById("preview-icon").style.display = "block";
-  document.getElementById("prod-image-url").value = "";
-
-  // Reset Detalhes (Cria 3 linhas vazias)
-  const container = document.getElementById("details-container");
-  container.innerHTML = "";
-  addDetailRow();
-  addDetailRow();
-}
-
-// Abre modal para EDITAR
-window.editarProduto = function (id) {
-  const produtos = document.querySelectorAll("#admin-menu-list tr");
-  // O jeito ideal seria buscar do array global ou da API,
-  // mas para simplificar vamos buscar o produto pelo ID na API novamente ou usar cache.
-  // Vamos fazer um fetch rápido específico ou usar o cache do carregarMenuAdmin.
-
-  fetchAdminMenu().then((lista) => {
-    const produto = lista.find((p) => p.id === id);
-    if (!produto) return;
-
-    produtoEmEdicaoId = id; // Modo Edição
-
-    // Preenche Campos
-    document.getElementById("modal-product-admin").style.display = "flex";
-    document.querySelector("#modal-product-admin h3").innerText =
-      "Editar Produto";
-    document.querySelector(
-      '#form-add-product button[type="submit"]'
-    ).innerText = "Salvar Alterações";
-
-    document.getElementById("prod-name").value = produto.name;
-    document.getElementById("prod-price").value = produto.price;
-    document.getElementById("prod-category").value =
-      produto.category || "Lanche";
-    document.getElementById("prod-desc").value = produto.description || "";
-    document.getElementById("prod-image-url").value = produto.image_url || "";
-
-    // Preview Imagem
-    if (produto.image_url) {
-      const img = document.getElementById("preview-img");
-      img.src = produto.image_url;
-      img.style.display = "block";
-      document.getElementById("preview-icon").style.display = "none";
-    } else {
-      document.getElementById("preview-img").style.display = "none";
-      document.getElementById("preview-icon").style.display = "block";
-    }
-
-    // Preenche Detalhes
-    const container = document.getElementById("details-container");
-    container.innerHTML = "";
-
-    let details = {};
-    try {
-      details =
-        typeof produto.details_json === "string"
-          ? JSON.parse(produto.details_json)
-          : produto.details || {};
-    } catch (e) {}
-
-    // Reconstrói as linhas baseadas no JSON
-    let temDetalhes = false;
-    ["carnes", "adicionais", "acompanhamentos", "bebidas"].forEach((key) => {
-      if (details[key] && details[key].length > 0) {
-        details[key].forEach((item) => {
-          // Formata "Nome - Preço"
-          const val =
-            item.price > 0 ? `${item.nome} - ${item.price}` : item.nome;
-          addDetailRow(key, val);
-          temDetalhes = true;
-        });
-      }
-    });
-
-    // Se não tiver nada, adiciona uma linha vazia
-    if (!temDetalhes) addDetailRow();
-  });
-};
-
-function closeProductModal() {
-  document.getElementById("modal-product-admin").style.display = "none";
-}
-
-// Adiciona linha visual (agora aceita valores pré-preenchidos)
-function addDetailRow(key = "adicionais", value = "") {
-  const container = document.getElementById("details-container");
-  const div = document.createElement("div");
-  div.style.display = "flex";
-  div.style.gap = "5px";
-
-  // Seleciona a opção correta no select
-  const selAdicionais = key === "adicionais" ? "selected" : "";
-  const selAcomp = key === "acompanhamentos" ? "selected" : "";
-  const selBebida = key === "bebidas" ? "selected" : "";
-  const selCarne = key === "carnes" ? "selected" : "";
-
-  div.innerHTML = `
-        <select class="detail-key" style="background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">
-            <option value="adicionais" ${selAdicionais}>Adicional</option>
-            <option value="acompanhamentos" ${selAcomp}>Acomp.</option>
-            <option value="bebidas" ${selBebida}>Bebida</option>
-            <option value="carnes" ${selCarne}>Carne</option>
-        </select>
-        <input type="text" class="detail-val" value="${value}" placeholder="Ex: Bacon - 3.00" style="flex:1; background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">
-        <button type="button" onclick="removeDetailRow(this)" style="background:#333; color:#e74c3c; border:none; cursor:pointer; padding:0 10px;">&times;</button>
-    `;
-  container.appendChild(div);
-}
-
-window.removeDetailRow = function (btn) {
-  // Exportado para o HTML ver
-  btn.parentElement.remove();
-};
-
-// --- SEGURANÇA DE DELEÇÃO ---
-// --- SEGURANÇA DE DELEÇÃO ---
-let idParaDeletar = null;
-
-// Removemos a const SENHA_MESTRA daqui. O segredo agora está seguro no Backend!
-
-window.deletarProduto = function (id) {
-  idParaDeletar = id;
-  const modal = document.getElementById("modal-security");
-  const input = document.getElementById("security-pass");
-
-  input.value = "";
-  modal.style.display = "flex";
-  setTimeout(() => input.focus(), 100);
-};
-
-window.closeSecurityModal = function () {
-  document.getElementById("modal-security").style.display = "none";
-  idParaDeletar = null;
-};
-
-window.executarDelecao = async function () {
-  const input = document.getElementById("security-pass");
-  const btn = document.querySelector("#modal-security .btn-primary");
-  const senhaDigitada = input.value;
-
-  if (!senhaDigitada) {
-    return alert("Por favor, digite a senha.");
-  }
-
-  if (!idParaDeletar) return;
-
-  const originalTxt = btn.innerHTML;
-  btn.innerHTML = "Verificando...";
-  btn.disabled = true;
-
-  // Envia o ID e a Senha Digitada para o Backend decidir
-  const result = await deleteProduct(idParaDeletar, senhaDigitada);
-
-  // Se result for true (sucesso)
-  if (result === true) {
-    alert("Produto excluído com sucesso!");
-    closeSecurityModal();
-    carregarMenuAdmin();
-  } else {
-    // Se der erro (ex: Senha incorreta vindo do python)
-    alert(result.error || "Erro ao excluir.");
-    input.value = "";
-    input.focus();
-  }
-
-  btn.innerHTML = originalTxt;
-  btn.disabled = false;
-};
-
-document.getElementById("security-pass")?.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") executarDelecao();
-});
-// SALVAR (CRIAR OU EDITAR)
-const formProd = document.getElementById("form-add-product");
-if (formProd) {
-  formProd.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const btn = formProd.querySelector('button[type="submit"]');
-    const originalTxt = btn.innerText;
-    btn.innerText = "Salvando...";
-    btn.disabled = true;
-
-    try {
-      const nome = document.getElementById("prod-name").value;
-      const preco = parseFloat(document.getElementById("prod-price").value);
-      const cat = document.getElementById("prod-category").value;
-      const desc = document.getElementById("prod-desc").value;
-      const imgUrl = document.getElementById("prod-image-url").value;
-
-      // Monta JSON de detalhes
-      const details = {
-        carnes: [],
-        adicionais: [],
-        acompanhamentos: [],
-        bebidas: [],
-      };
-      const rows = document.querySelectorAll("#details-container > div");
-
-      rows.forEach((row) => {
-        const key = row.querySelector(".detail-key").value;
-        const val = row.querySelector(".detail-val").value.trim();
-
-        if (val) {
-          let nomeItem = val;
-          let precoItem = 0.0;
-          if (val.includes("-")) {
-            const partes = val.split("-");
-            nomeItem = partes[0].trim();
-            const precoString = partes[1].replace(",", ".").trim();
-            precoItem = parseFloat(precoString) || 0;
-          }
-          details[key].push({ nome: nomeItem, price: precoItem });
-        }
-      });
-
-      const data = {
-        name: nome,
-        price: preco,
-        category: cat,
-        description: desc,
-        image_url: imgUrl,
-        details: details,
-      };
-
-      let ok = false;
-      if (produtoEmEdicaoId) {
-        // MODO EDIÇÃO
-        ok = await updateProduct(produtoEmEdicaoId, data);
-      } else {
-        // MODO CRIAÇÃO
-        ok = await createProduct(data);
-      }
-
-      if (ok) {
-        alert(produtoEmEdicaoId ? "Produto atualizado!" : "Produto criado!");
-        closeProductModal();
-        carregarMenuAdmin();
-      } else {
-        throw new Error("Erro no servidor.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao salvar: " + error.message);
-    } finally {
-      btn.innerText = originalTxt;
-      btn.disabled = false;
-    }
-  });
-}
-
-// Renderização da Tabela (Atualizado com botões corretos)
-window.carregarMenuAdmin = async function () {
-  const tbody = document.getElementById("admin-menu-list");
-  const produtos = await fetchAdminMenu(); // Certifique-se de importar isso
 
   if (produtos.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="4">Nenhum produto cadastrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4">Cardápio vazio.</td></tr>';
     return;
   }
 
@@ -496,22 +170,20 @@ window.carregarMenuAdmin = async function () {
                 <i class="toggle-switch fa-solid ${
                   p.is_available ? "fa-toggle-on on" : "fa-toggle-off off"
                 }" 
-                   onclick="toggleProd(${p.id})"
-                   style="font-size:1.5rem; cursor:pointer;">
-                </i>
+                   onclick="toggleProd(${p.id})" 
+                   style="font-size:1.5rem; cursor:pointer;" 
+                   title="Pausar/Ativar"></i>
             </td>
             <td>
                 <div style="display:flex; gap:5px; justify-content:center;">
-                    <button class="btn-small" style="background:#3498db; color:white; border:none;" onclick="editarProduto(${
-                      p.id
-                    })" title="Editar">
-                        <i class="fa-solid fa-pen"></i>
-                    </button>
-                    <button class="btn-small" style="background:#e74c3c; color:white; border:none;" onclick="deletarProduto(${
-                      p.id
-                    })" title="Excluir">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    <button class="btn-small" style="background:#3498db; color:white; border:none;" 
+                            onclick="editarProduto(${
+                              p.id
+                            })"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-small" style="background:#e74c3c; color:white; border:none;" 
+                            onclick="deletarProduto(${
+                              p.id
+                            })"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         </tr>
@@ -520,15 +192,140 @@ window.carregarMenuAdmin = async function () {
     .join("");
 };
 
-// ... (Upload de Imagem e ToggleProd continuam iguais) ...
-// Upload Imagem
+window.toggleProd = async function (id) {
+  await toggleAvailability(id);
+  carregarMenuAdmin();
+};
+
+// --- MODAL DE PRODUTO (Criar e Editar) ---
+
+window.openProductModal = function () {
+  produtoEmEdicaoId = null; // Modo Criar
+
+  // Limpa formulário e visual
+  document.getElementById("form-add-product").reset();
+  document.querySelector("#modal-product-admin h3").innerText = "Novo Produto";
+  document.querySelector('#form-add-product button[type="submit"]').innerText =
+    "Cadastrar Produto";
+
+  // Imagem
+  document.getElementById("preview-img").style.display = "none";
+  document.getElementById("preview-icon").style.display = "block";
+  document.getElementById("prod-image-url").value = "";
+
+  // Detalhes (Linhas vazias)
+  document.getElementById("details-container").innerHTML = "";
+  window.addDetailRow();
+  window.addDetailRow();
+
+  document.getElementById("modal-product-admin").style.display = "flex";
+};
+
+window.editarProduto = async function (id) {
+  // Busca dados atualizados do menu
+  const produtos = await fetchAdminMenu();
+  const produto = produtos.find((p) => p.id === id);
+  if (!produto) return;
+
+  produtoEmEdicaoId = id; // Modo Editar
+
+  // Preenche formulário
+  document.querySelector("#modal-product-admin h3").innerText =
+    "Editar Produto";
+  document.querySelector('#form-add-product button[type="submit"]').innerText =
+    "Salvar Alterações";
+
+  document.getElementById("prod-name").value = produto.name;
+  document.getElementById("prod-price").value = produto.price;
+  document.getElementById("prod-category").value = produto.category || "Lanche";
+  document.getElementById("prod-desc").value = produto.description || "";
+  document.getElementById("prod-image-url").value = produto.image_url || "";
+
+  // Preview Imagem
+  if (produto.image_url) {
+    const img = document.getElementById("preview-img");
+    img.src = produto.image_url;
+    img.style.display = "block";
+    document.getElementById("preview-icon").style.display = "none";
+  }
+
+  // Preenche Detalhes
+  const container = document.getElementById("details-container");
+  container.innerHTML = "";
+
+  let details = {};
+  try {
+    // Tenta ler do objeto ou parsear string (compatibilidade)
+    details =
+      typeof produto.details_json === "string"
+        ? JSON.parse(produto.details_json)
+        : produto.details || {};
+  } catch (e) {}
+
+  let temDetalhes = false;
+  ["carnes", "adicionais", "acompanhamentos", "bebidas"].forEach((key) => {
+    if (details[key]) {
+      details[key].forEach((item) => {
+        // Formata "Bacon - 3.00"
+        const val = item.price > 0 ? `${item.nome} - ${item.price}` : item.nome;
+        window.addDetailRow(key, val);
+        temDetalhes = true;
+      });
+    }
+  });
+
+  if (!temDetalhes) window.addDetailRow(); // Garante pelo menos uma linha
+
+  document.getElementById("modal-product-admin").style.display = "flex";
+};
+
+window.closeProductModal = function () {
+  document.getElementById("modal-product-admin").style.display = "none";
+};
+
+// Adiciona linha dinâmica no modal
+window.addDetailRow = function (key = "adicionais", value = "") {
+  const container = document.getElementById("details-container");
+  const div = document.createElement("div");
+  div.style.display = "flex";
+  div.style.gap = "5px";
+
+  const options = `
+    <option value="adicionais" ${
+      key === "adicionais" ? "selected" : ""
+    }>Adicional</option>
+    <option value="acompanhamentos" ${
+      key === "acompanhamentos" ? "selected" : ""
+    }>Acomp.</option>
+    <option value="bebidas" ${
+      key === "bebidas" ? "selected" : ""
+    }>Bebida</option>
+    <option value="carnes" ${key === "carnes" ? "selected" : ""}>Carne</option>
+  `;
+
+  div.innerHTML = `
+    <select class="detail-key" style="background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">${options}</select>
+    <input type="text" class="detail-val" value="${value}" placeholder="Ex: Bacon - 3.00" style="flex:1; background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">
+    <button type="button" onclick="removeDetailRow(this)" style="background:#333; color:#e74c3c; border:none; cursor:pointer; padding:0 10px;">&times;</button>
+  `;
+  container.appendChild(div);
+};
+
+window.removeDetailRow = function (btn) {
+  btn.parentElement.remove();
+};
+
+// Upload de Imagem (Listener)
 const fileInput = document.getElementById("prod-file");
 if (fileInput) {
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const lbl = document.querySelector('label[for="prod-file"]');
     lbl.innerText = "Enviando...";
+
+    // Preview Local
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = document.getElementById("preview-img");
@@ -537,6 +334,8 @@ if (fileInput) {
       document.getElementById("preview-icon").style.display = "none";
     };
     reader.readAsDataURL(file);
+
+    // Envio API
     const url = await uploadImage(file);
     if (url) {
       document.getElementById("prod-image-url").value = url;
@@ -548,3 +347,320 @@ if (fileInput) {
     }
   });
 }
+
+// Salvar Produto (Submit)
+const formProd = document.getElementById("form-add-product");
+if (formProd) {
+  formProd.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = formProd.querySelector('button[type="submit"]');
+    btn.innerText = "Salvando...";
+    btn.disabled = true;
+
+    try {
+      // Coleta dados simples
+      const data = {
+        name: document.getElementById("prod-name").value,
+        price: parseFloat(document.getElementById("prod-price").value),
+        category: document.getElementById("prod-category").value,
+        description: document.getElementById("prod-desc").value,
+        image_url: document.getElementById("prod-image-url").value,
+        details: {
+          carnes: [],
+          adicionais: [],
+          acompanhamentos: [],
+          bebidas: [],
+        },
+      };
+
+      // Processa as linhas de detalhes
+      document.querySelectorAll("#details-container > div").forEach((row) => {
+        const key = row.querySelector(".detail-key").value;
+        const val = row.querySelector(".detail-val").value.trim();
+        if (val) {
+          let nomeItem = val;
+          let precoItem = 0.0;
+          if (val.includes("-")) {
+            const partes = val.split("-");
+            nomeItem = partes[0].trim();
+            // Converte "3,50" para 3.50
+            precoItem = parseFloat(partes[1].replace(",", ".").trim()) || 0;
+          }
+          data.details[key].push({ nome: nomeItem, price: precoItem });
+        }
+      });
+
+      // Envia
+      let ok = false;
+      if (produtoEmEdicaoId) {
+        ok = await updateProduct(produtoEmEdicaoId, data);
+      } else {
+        ok = await createProduct(data);
+      }
+
+      if (ok) {
+        alert(produtoEmEdicaoId ? "Produto atualizado!" : "Produto criado!");
+        window.closeProductModal();
+        carregarMenuAdmin();
+      } else {
+        throw new Error("Erro no servidor");
+      }
+    } catch (err) {
+      alert("Erro ao salvar: " + err.message);
+    } finally {
+      btn.innerText = produtoEmEdicaoId
+        ? "Salvar Alterações"
+        : "Cadastrar Produto";
+      btn.disabled = false;
+    }
+  });
+}
+
+// --- SEGURANÇA: EXCLUIR PRODUTO ---
+
+window.deletarProduto = function (id) {
+  idParaDeletar = id;
+  const modal = document.getElementById("modal-security");
+  const input = document.getElementById("security-pass");
+  input.value = "";
+  modal.style.display = "flex";
+  setTimeout(() => input.focus(), 100);
+};
+
+window.closeSecurityModal = function () {
+  document.getElementById("modal-security").style.display = "none";
+  idParaDeletar = null;
+};
+
+window.executarDelecao = async function () {
+  const input = document.getElementById("security-pass");
+  const btn = document.querySelector("#modal-security .btn-primary");
+  const senha = input.value;
+
+  if (!senha) return alert("Digite a senha mestra.");
+  if (!idParaDeletar) return;
+
+  btn.innerHTML = "Verificando...";
+  btn.disabled = true;
+
+  const result = await deleteProduct(idParaDeletar, senha);
+
+  if (result === true) {
+    alert("Produto excluído!");
+    closeSecurityModal();
+    carregarMenuAdmin();
+  } else {
+    alert(result.error || "Senha incorreta ou erro.");
+    input.value = "";
+    input.focus();
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-trash"></i> Excluir Agora';
+  btn.disabled = false;
+};
+
+// Atalho Enter no modal de senha
+document.getElementById("security-pass")?.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") window.executarDelecao();
+});
+
+// =============================================================================
+//  ABA 3: CHAT
+// =============================================================================
+
+window.carregarListaConversas = async function () {
+  const lista = await fetchAdminConversations();
+  const container = document.getElementById("chat-users-list");
+
+  if (lista.length === 0) {
+    container.innerHTML =
+      '<p style="padding:20px; color:#666">Nenhuma conversa.</p>';
+    return;
+  }
+
+  container.innerHTML = lista
+    .map(
+      (u) => `
+        <div class="chat-user-item ${
+          chatUserIdAtivo === u.user_id ? "active" : ""
+        }" 
+             onclick="selecionarChat(${u.user_id}, '${u.user_name}')">
+            <div class="user-avatar-small">${u.user_name[0].toUpperCase()}</div>
+            <div style="flex:1">
+                <div>${u.user_name}</div>
+                <small style="color:#888">${new Date(u.last_interaction)
+                  .toLocaleTimeString()
+                  .slice(0, 5)}</small>
+            </div>
+        </div>
+    `
+    )
+    .join("");
+};
+
+window.selecionarChat = function (id, nome) {
+  chatUserIdAtivo = id;
+  document.getElementById("admin-chat-input-area").style.display = "flex";
+  carregarChatAtivo(id);
+  carregarListaConversas(); // Atualiza destaque
+};
+
+async function carregarChatAtivo(uid) {
+  const msgs = await fetchAdminUserHistory(uid);
+  const container = document.getElementById("admin-chat-messages");
+
+  container.innerHTML = msgs
+    .map(
+      (m) =>
+        `<div class="msg ${m.is_from_admin ? "msg-admin" : "msg-user"}">${
+          m.message
+        }</div>`
+    )
+    .join("");
+
+  // Rola para o final
+  container.scrollTop = container.scrollHeight;
+}
+
+window.enviarRespostaAdmin = async function () {
+  const inp = document.getElementById("admin-chat-input");
+  const txt = inp.value.trim();
+
+  if (!txt || !chatUserIdAtivo) return;
+
+  if (await sendAdminReply(chatUserIdAtivo, txt)) {
+    inp.value = "";
+    carregarChatAtivo(chatUserIdAtivo);
+  } else {
+    alert("Erro ao enviar.");
+  }
+};
+
+window.handleAdminChatKey = function (e) {
+  if (e.key === "Enter") window.enviarRespostaAdmin();
+};
+
+// =============================================================================
+//  ABA 4: CONFIGURAÇÕES (Cupons e Usuários)
+// =============================================================================
+
+window.switchConfigTab = function (tabName) {
+  document
+    .querySelectorAll(".config-tab-btn")
+    .forEach((btn) => btn.classList.remove("active"));
+  event.currentTarget.classList.add("active");
+
+  document
+    .querySelectorAll(".config-subpanel")
+    .forEach((el) => (el.style.display = "none"));
+  document.getElementById(`config-${tabName}`).style.display = "block";
+
+  if (tabName === "coupons") carregarCuponsAdmin();
+  if (tabName === "users") carregarUsuariosAdmin();
+};
+
+// Cupons
+window.carregarCuponsAdmin = async function () {
+  const container = document.getElementById("coupons-list");
+  const lista = await fetchCoupons();
+
+  if (lista.length === 0) {
+    container.innerHTML = '<p style="color:#666">Nenhum cupom ativo.</p>';
+    return;
+  }
+
+  container.innerHTML = lista
+    .map(
+      (c) => `
+        <div class="coupon-card">
+            <div class="coupon-code">${c.code}</div>
+            <div class="coupon-info">
+                ${
+                  c.discount_percent > 0
+                    ? c.discount_percent + "% OFF"
+                    : "R$ " + c.discount_fixed.toFixed(2) + " OFF"
+                }
+            </div>
+            <div class="coupon-info">Min: R$ ${c.min_purchase.toFixed(2)}</div>
+            <div class="coupon-info">Usos: ${c.used_count} / ${
+        c.usage_limit || "∞"
+      }</div>
+            
+            <button class="btn-small btn-cancel" onclick="deletarCupom(${
+              c.id
+            })" 
+                style="position:absolute; top:10px; right:10px; border:none; background:transparent; color:#e74c3c;">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+    `
+    )
+    .join("");
+};
+
+window.toggleNewCouponForm = function () {
+  const form = document.getElementById("form-new-coupon");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+};
+
+window.deletarCupom = async function (id) {
+  if (confirm("Apagar este cupom permanentemente?")) {
+    await deleteCoupon(id);
+    carregarCuponsAdmin();
+  }
+};
+
+const formCupom = document.getElementById("form-new-coupon");
+if (formCupom) {
+  formCupom.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = {
+      code: document.getElementById("cupom-code").value.trim(),
+      discount_percent:
+        parseInt(document.getElementById("cupom-percent").value) || 0,
+      discount_fixed:
+        parseFloat(document.getElementById("cupom-fixed").value) || 0,
+      min_purchase: parseFloat(document.getElementById("cupom-min").value) || 0,
+      usage_limit:
+        parseInt(document.getElementById("cupom-limit").value) || null,
+    };
+
+    if (await createCoupon(data)) {
+      alert("Cupom criado!");
+      formCupom.reset();
+      formCupom.style.display = "none";
+      carregarCuponsAdmin();
+    } else {
+      alert("Erro (código já existe?)");
+    }
+  });
+}
+
+// Usuários
+window.carregarUsuariosAdmin = async function () {
+  const tbody = document.getElementById("users-list-body");
+  tbody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+
+  const lista = await fetchUsersList();
+
+  if (lista.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="4">Nenhum usuário encontrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista
+    .map(
+      (u) => `
+        <tr>
+            <td>${u.id}</td>
+            <td>${u.name}<br><small style="color:#666">${u.email}</small></td>
+            <td>${u.whatsapp || "-"}</td>
+            <td><span style="background:#333; padding:2px 6px; border-radius:4px;">${
+              u.orders_count
+            }</span></td>
+        </tr>
+    `
+    )
+    .join("");
+};

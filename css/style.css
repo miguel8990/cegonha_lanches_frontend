@@ -2402,3 +2402,70 @@ body.login-page::before {
     transform: translateX(100%);
   }
 }
+
+/* site/css/style.css - Adicione ao final */
+
+.coupons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.coupon-option {
+  display: none; /* Esconde o input radio real */
+}
+
+.coupon-card-ui {
+  background: #222;
+  border: 1px dashed #555;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  opacity: 1;
+}
+
+/* Estado Selecionado */
+.coupon-option:checked + .coupon-card-ui {
+  background: rgba(242, 201, 76, 0.1);
+  border-color: var(--color-gold);
+  border-style: solid;
+}
+
+.coupon-option:checked + .coupon-card-ui::after {
+  content: "✔";
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  color: var(--color-gold);
+  font-size: 0.8rem;
+}
+
+/* Estado Desabilitado (Não atinge mínimo) */
+.coupon-card-ui.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.cp-code {
+  display: block;
+  color: var(--color-gold);
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.cp-desc {
+  display: block;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.cp-min {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 5px;
+}

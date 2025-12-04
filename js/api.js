@@ -88,6 +88,7 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
     },
     items: itemsFormatados,
     payment_method: frontData.payment_method,
+    coupon_code: frontData.coupon_code,
   };
 
   try {
@@ -470,5 +471,67 @@ export async function deleteProduct(id, password) {
     console.error(e);
     // Retorna o erro para o admin.js mostrar no alert
     return { error: e.message };
+  }
+}
+
+// --- CONFIG: CUPONS & USERS ---
+export async function fetchCoupons() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/coupons`, {
+      headers: getAuthHeader(),
+    });
+    return res.ok ? await res.json() : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function createCoupon(data) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/coupons`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeader() },
+      body: JSON.stringify(data),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function deleteCoupon(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/coupons/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeader(),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function fetchUsersList() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/users`, {
+      headers: getAuthHeader(),
+    });
+    return res.ok ? await res.json() : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// site/js/api.js
+
+// ... (outras funções) ...
+
+export async function fetchPublicCoupons() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/coupons/public`);
+    return res.ok ? await res.json() : [];
+  } catch (e) {
+    console.error("Erro ao buscar cupons:", e);
+    return [];
   }
 }

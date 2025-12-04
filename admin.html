@@ -24,6 +24,9 @@
         <button onclick="switchPanel('chat')">
           <i class="fa-regular fa-comments"></i> Chat
         </button>
+        <button onclick="switchPanel('config')">
+          <i class="fa-solid fa-sliders"></i> Configurações
+        </button>
         <button class="logout-btn" onclick="adminLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> Sair
         </button>
@@ -101,6 +104,121 @@
               <button class="btn-primary" onclick="enviarRespostaAdmin()">
                 <i class="fa-solid fa-paper-plane"></i>
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="panel-config" class="panel-section">
+        <div class="header-section">
+          <h2>Configurações do Sistema</h2>
+        </div>
+
+        <div class="config-tabs">
+          <button
+            class="config-tab-btn active"
+            onclick="switchConfigTab('coupons')"
+          >
+            <i class="fa-solid fa-ticket"></i> Cupons
+          </button>
+          <button class="config-tab-btn" onclick="switchConfigTab('users')">
+            <i class="fa-solid fa-users"></i> Usuários
+          </button>
+        </div>
+
+        <div class="config-content">
+          <div id="config-coupons" class="config-subpanel active">
+            <div class="subpanel-header">
+              <h3>Gerenciar Cupons de Desconto</h3>
+              <button
+                class="btn-primary btn-small"
+                onclick="toggleNewCouponForm()"
+              >
+                + Criar Cupom
+              </button>
+            </div>
+
+            <form
+              id="form-new-coupon"
+              style="
+                display: none;
+                background: #222;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 8px;
+                border: 1px solid #444;
+              "
+            >
+              <div class="form-row">
+                <div class="form-group" style="flex: 1">
+                  <label>Código (Ex: PROMO10)</label>
+                  <input
+                    type="text"
+                    id="cupom-code"
+                    required
+                    style="text-transform: uppercase"
+                  />
+                </div>
+                <div class="form-group" style="flex: 1">
+                  <label>Lim. Usos (Vazio = Infinito)</label>
+                  <input type="number" id="cupom-limit" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 1">
+                  <label>Desconto %</label>
+                  <input type="number" id="cupom-percent" placeholder="0" />
+                </div>
+                <div class="form-group" style="flex: 1">
+                  <label>Desconto Fixo (R$)</label>
+                  <input
+                    type="number"
+                    id="cupom-fixed"
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Mínimo do Pedido (R$)</label>
+                <input
+                  type="number"
+                  id="cupom-min"
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
+              <button type="submit" class="btn-primary full-width">
+                Salvar Cupom
+              </button>
+            </form>
+
+            <div id="coupons-list" class="grid-list">
+              <p>Carregando...</p>
+            </div>
+          </div>
+
+          <div id="config-users" class="config-subpanel" style="display: none">
+            <div class="subpanel-header">
+              <h3>Base de Usuários</h3>
+              <button
+                class="btn-outline btn-small"
+                onclick="carregarUsuariosAdmin()"
+              >
+                Atualizar
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>WhatsApp</th>
+                    <th>Pedidos</th>
+                  </tr>
+                </thead>
+                <tbody id="users-list-body"></tbody>
+              </table>
             </div>
           </div>
         </div>
