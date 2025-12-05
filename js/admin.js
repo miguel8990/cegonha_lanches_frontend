@@ -15,6 +15,8 @@ import {
   createCoupon,
   deleteCoupon,
   fetchUsersList,
+  fetchCloudGallery,
+  deleteCloudImage,
 } from "./api.js";
 
 // --- Variáveis de Estado ---
@@ -212,6 +214,12 @@ window.openProductModal = function () {
   document.getElementById("preview-img").style.display = "none";
   document.getElementById("preview-icon").style.display = "block";
   document.getElementById("prod-image-url").value = "";
+  const lbl = document.querySelector('label[for="prod-file"]');
+  if (lbl) {
+    lbl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload PC';
+    lbl.style.color = "";
+    lbl.style.borderColor = "";
+  }
 
   // Detalhes (Linhas vazias)
   document.getElementById("details-container").innerHTML = "";
@@ -316,35 +324,110 @@ window.removeDetailRow = function (btn) {
 };
 
 // Upload de Imagem (Listener)
+// Upload de Imagem (Listener)
 const fileInput = document.getElementById("prod-file");
+
 if (fileInput) {
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const lbl = document.querySelector('label[for="prod-file"]');
-    lbl.innerText = "Enviando...";
+    // Elementos visuais
+    const lbl = document.getElementById("btn-upload-pc"); // O botão que criamos
+    const textoOriginal =
+      '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload PC</span>';
 
-    // Preview Local
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = document.getElementById("preview-img");
-      img.src = ev.target.result;
-      img.style.display = "block";
-      document.getElementById("preview-icon").style.display = "none";
-    };
-    reader.readAsDataURL(file);
+    // 1. Estado Inicial: Verificando Duplicatas
+    lbl.innerHTML =
+      '<i class="fa-solid fa-magnifying-glass fa-spin"></i> Verificando...';
+    lbl.style.pointerEvents = "none";
+    lbl.style.opacity = "0.7";
 
-    // Envio API
-    const url = await uploadImage(file);
-    if (url) {
-      document.getElementById("prod-image-url").value = url;
-      lbl.innerText = "Foto OK ✅";
-      lbl.style.color = "#2ecc71";
-    } else {
-      alert("Falha no upload.");
-      lbl.innerText = "Tentar de novo";
+    try {
+      // --- NOVO: VERIFICAÇÃO DE DUPLICIDADE ---
+      // 1. Busca a lista atual da nuvem
+      const galeria = await fetchCloudGallery();
+
+      // 2. Extrai o nome do arquivo sem extensão (ex: "burger.jpg" -> "burger")
+      // O Cloudinary usa o "public_id" que geralmente é o nome do arquivo sem extensão
+      const nomeArquivo = file.name.split(".")[0].toLowerCase();
+
+      // 3. Verifica se existe alguma imagem na galeria que termine com esse nome
+      // (O public_id pode ser "cegonha_cardapio/burger", então checamos o final)
+      const duplicada = galeria.find((img) => {
+        const nomeNaNuvem = img.name.split("/").pop().toLowerCase(); // Pega só o final
+        return nomeNaNuvem === nomeArquivo;
+      });
+
+      if (duplicada) {
+        alert(
+          `Atenção: A imagem "${file.name}" já existe na nuvem!\n\nPara usar esta imagem, clique no botão "Nuvem" e selecione-a na galeria.`
+        );
+        throw new Error("Imagem duplicada"); // Força a saída para o catch
+      }
+
+      // --- SE PASSOU, CONTINUA PRO UPLOAD ---
+      lbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+      // Preview Local (para não deixar o usuário esperando o upload terminar para ver)
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.getElementById("preview-img");
+        if (img) {
+          img.src = ev.target.result;
+          img.style.display = "block";
+          document.getElementById("preview-icon").style.display = "none";
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Envio Real
+      const url = await uploadImage(file);
+
+      if (url) {
+        // SUCESSO
+        document.getElementById("prod-image-url").value = url;
+
+        // Alert pedido
+        alert("Imagem enviada para a nuvem com sucesso!");
+
+        lbl.innerHTML = "Foto OK ✅";
+        lbl.style.color = "#2ecc71";
+        lbl.style.borderColor = "#2ecc71";
+
+        // Reseta visual após 3s
+        setTimeout(() => {
+          lbl.innerHTML = textoOriginal;
+          lbl.style.color = "";
+          lbl.style.borderColor = "";
+          lbl.style.pointerEvents = "auto";
+          lbl.style.opacity = "1";
+        }, 3000);
+      } else {
+        throw new Error("Falha no envio");
+      }
+    } catch (error) {
+      // TRATAMENTO DE ERRO OU DUPLICIDADE
+      console.warn(error.message);
+
+      // Se não for erro de duplicada (que já deu alert), avisa
+      if (error.message !== "Imagem duplicada") {
+        alert("Erro: " + error.message);
+      }
+
+      // Reseta o botão imediatamente
+      lbl.innerHTML = textoOriginal;
+      lbl.style.pointerEvents = "auto";
+      lbl.style.opacity = "1";
+
+      // Limpa o preview se deu erro
+      document.getElementById("preview-img").style.display = "none";
+      document.getElementById("preview-icon").style.display = "block";
+      document.getElementById("prod-image-url").value = "";
     }
+
+    // Limpa o input para permitir nova tentativa
+    fileInput.value = "";
   });
 }
 
@@ -664,3 +747,103 @@ window.carregarUsuariosAdmin = async function () {
     )
     .join("");
 };
+// site/js/admin.js (Substitua o final do arquivo por isto)
+
+// =============================================================================
+//  SISTEMA DE GALERIA CLOUDINARY (UNIFICADO)
+// =============================================================================
+
+// 1. Função Principal: Abre o Modal E Carrega a Lista
+window.abrirGaleriaNuvem = async function () {
+  const modal = document.getElementById("modal-cloud-gallery");
+  const container = document.getElementById("cloud-grid");
+
+  // Ação 1: Mostrar o Modal
+  modal.style.display = "flex";
+
+  // Ação 2: Feedback de Carregamento
+  container.innerHTML =
+    '<p style="color:#ccc"><i class="fa-solid fa-spinner fa-spin"></i> Carregando nuvem...</p>';
+
+  // Ação 3: Buscar dados da API
+  const imagens = await fetchCloudGallery();
+
+  // Ação 4: Renderizar
+  if (imagens.length === 0) {
+    container.innerHTML =
+      '<p style="color:#ccc">Nenhuma imagem encontrada na nuvem.</p>';
+    return;
+  }
+
+  container.innerHTML = imagens
+    .map((img) => {
+      // Limpa o nome para ficar mais bonito (remove pasta e extensão se quiser, ou deixa completo)
+      // Aqui mostramos o public_id completo (ex: "cegonha_cardapio/burger")
+      const nomeExibicao = img.name.split("/").pop(); // Pega só o final do nome (ex: "burger")
+
+      return `
+        <div class="gallery-item" onclick="selecionarImagemCloud('${img.url}')" title="${img.name}">
+            <button class="btn-delete-img" 
+                    onclick="apagarImagemCloud(event, '${img.name}')" 
+                    title="Apagar permanentemente">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+            
+            <img src="${img.url}" loading="lazy">
+            
+            <div class="gallery-name">${nomeExibicao}</div>
+        </div>
+    `;
+    })
+    .join("");
+};
+
+window.fecharGaleriaNuvem = function () {
+  document.getElementById("modal-cloud-gallery").style.display = "none";
+};
+
+window.selecionarImagemCloud = function (url) {
+  // 1. Preenche o input escondido do formulário de produto
+  document.getElementById("prod-image-url").value = url;
+
+  // 2. Atualiza o visual (Preview)
+  const img = document.getElementById("preview-img");
+  const icon = document.getElementById("preview-icon");
+
+  img.src = url;
+  img.style.display = "block";
+  icon.style.display = "none";
+
+  // 3. Fecha a galeria
+  fecharGaleriaNuvem();
+};
+
+// Função de Apagar Imagem
+async function apagarImagemCloud(event, publicId) {
+  event.stopPropagation(); // Impede que o clique selecione a imagem ao tentar apagar
+
+  if (
+    !confirm(
+      "Tem certeza? Essa imagem será apagada do servidor permanentemente."
+    )
+  )
+    return;
+
+  const btn = event.currentTarget;
+  // Feedback visual no botão de lixo
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  const sucesso = await deleteCloudImage(publicId);
+
+  if (sucesso) {
+    // REUTILIZA A FUNÇÃO UNIFICADA:
+    // Chama a abrirGaleriaNuvem novamente para recarregar a lista atualizada
+    await window.abrirGaleriaNuvem();
+  } else {
+    alert("Erro ao apagar. Verifique se tem permissão.");
+    btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+  }
+}
+
+// Exporta a função de apagar para o HTML poder usar no onclick
+window.apagarImagemCloud = apagarImagemCloud;

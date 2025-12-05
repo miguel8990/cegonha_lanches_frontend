@@ -347,3 +347,152 @@ td {
   color: #888;
   font-weight: normal;
 }
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+.gallery-item {
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: 0.2s;
+}
+.gallery-item:hover {
+  border-color: var(--color-gold);
+  transform: scale(1.05);
+}
+
+/* site/css/admin.css - Adicione ou substitua no final */
+
+.btn-upload-padrao {
+  /* 1. Reset Agressivo (Remove estilo nativo do navegador) */
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+
+  /* 2. Medidas Físicas Exatas */
+  box-sizing: border-box; /* Garante que borda e padding contem na altura */
+  height: 45px !important; /* Altura fixa obrigatória */
+  min-width: 140px; /* Largura mínima igual para ambos */
+  padding: 0 15px;
+  margin: 0; /* Remove margens padrão */
+
+  /* 3. Layout Interno (Flexbox) */
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  /* 4. Estilo Visual */
+  border: 1px solid var(--color-gold);
+  border-radius: 6px;
+  color: var(--color-gold);
+
+  /* 5. Tipografia (Forçar igualdade) */
+  font-family: "Poppins", sans-serif; /* Mesma fonte do site */
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1; /* Remove espaços em branco verticais */
+  text-decoration: none;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-upload-padrao:hover {
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  transform: translateY(-2px);
+}
+
+/* Garante que o ícone esteja alinhado */
+.btn-upload-padrao i {
+  font-size: 1.1rem;
+  display: flex;
+}
+
+/* No site/css/admin.css */
+
+.gallery-item {
+  position: relative; /* Necessário para posicionar o botão */
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: 0.2s;
+}
+
+.btn-delete-img {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(231, 76, 60, 0.9); /* Vermelho */
+  color: white;
+  border: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: 0.2s;
+}
+
+.btn-delete-img:hover {
+  background: red;
+  transform: scale(1.1);
+}
+/* Ajuste no Item da Galeria para acomodar o texto */
+.gallery-item {
+  position: relative;
+  cursor: pointer;
+  border: 1px solid #444;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #222;
+  display: flex;
+  flex-direction: column;
+  transition: 0.2s;
+}
+
+.gallery-item:hover {
+  border-color: var(--color-gold);
+  transform: translateY(-2px);
+}
+
+/* A Imagem */
+.gallery-item img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block; /* Remove espaço branco fantasma */
+}
+
+/* O Nome da Imagem (NOVO) */
+.gallery-name {
+  font-size: 0.75rem;
+  color: #ccc;
+  padding: 5px;
+  text-align: center;
+  background-color: #1a1a1a;
+  border-top: 1px solid #333;
+
+  /* Truque para cortar texto longo com "..." */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ajuste no botão de apagar para ficar mais visível */
+.btn-delete-img {
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+.gallery-item:hover .btn-delete-img {
+  opacity: 1;
+}

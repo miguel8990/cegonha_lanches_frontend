@@ -1,4 +1,4 @@
-const CACHE_NAME = "cegonha-v1.2";
+/*const CACHE_NAME = "cegonha-v1.2";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -44,4 +44,4 @@ self.addEventListener("fetch", (event) => {
       return response || fetch(event.request);
     })
   );
-});
+});*/

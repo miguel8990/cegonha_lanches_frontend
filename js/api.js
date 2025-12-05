@@ -103,6 +103,11 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       headers: headers,
       body: JSON.stringify(payload),
     });
+    const respostaBack = await response.json();
+
+    if (abrirWhatsapp) {
+      enviarWhatsApp(frontData, respostaBack.id);
+    }
 
     if (!response.ok) {
       const err = await response.json();
@@ -115,7 +120,11 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       enviarWhatsApp(frontData, pedido.id);
     }
 
-    return { success: true, orderId: pedido.id };
+    return {
+      success: true,
+      orderId: respostaBack.id,
+      redirectUrl: respostaBack.redirect_url,
+    };
   } catch (error) {
     console.error("Erro Envio:", error);
     return { success: false, error: error.message };
@@ -533,5 +542,40 @@ export async function fetchPublicCoupons() {
   } catch (e) {
     console.error("Erro ao buscar cupons:", e);
     return [];
+  }
+}
+// site/js/api.js
+
+// ... (código existente) ...
+
+export async function fetchCloudGallery() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload/gallery`, {
+      headers: getAuthHeader(),
+    });
+    if (!res.ok) throw new Error("Erro ao buscar galeria");
+    return await res.json();
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+}
+
+// Adicione no final do api.js
+
+export async function deleteCloudImage(publicId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload/gallery`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ public_id: publicId }),
+    });
+    return res.ok;
+  } catch (e) {
+    console.error(e);
+    return false;
   }
 }

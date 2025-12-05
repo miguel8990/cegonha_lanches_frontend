@@ -226,6 +226,7 @@
     </main>
 
     <div id="toast-container"></div>
+
     <div id="modal-product-admin" class="modal-overlay">
       <div class="modal-content auth-content" style="max-width: 500px">
         <div class="header-section" style="margin-bottom: 20px">
@@ -272,12 +273,7 @@
                   "
                 />
               </div>
-              <label
-                for="prod-file"
-                class="btn-outline btn-small"
-                style="cursor: pointer"
-                >Escolher Foto</label
-              >
+
               <input
                 type="file"
                 id="prod-file"
@@ -285,6 +281,37 @@
                 style="display: none"
               />
               <input type="hidden" id="prod-image-url" />
+
+              <div
+                style="
+                  display: flex;
+                  gap: 15px;
+                  justify-content: center;
+                  align-items: center;
+                  margin-top: 15px;
+                "
+              >
+                <button
+                  type="button"
+                  id="btn-upload-pc"
+                  class="btn-upload-padrao"
+                  onclick="document.getElementById('prod-file').click()"
+                  title="Enviar do computador"
+                >
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Upload PC</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-upload-padrao"
+                  onclick="abrirGaleriaNuvem()"
+                  title="Escolher imagem já enviada"
+                >
+                  <i class="fa-solid fa-images"></i>
+                  <span>Nuvem</span>
+                </button>
+              </div>
             </div>
 
             <div class="form-row">
@@ -386,6 +413,7 @@
         </div>
       </div>
     </div>
+
     <div id="modal-security" class="modal-overlay" style="z-index: 4000">
       <div
         class="modal-content auth-content"
@@ -446,6 +474,32 @@
         </div>
       </div>
     </div>
+
+    <div id="modal-cloud-gallery" class="modal-overlay" style="z-index: 5000">
+      <div
+        class="modal-content auth-content"
+        style="max-width: 700px; height: 80vh"
+      >
+        <div class="header-section">
+          <h3 style="color: white; margin: 0">Galeria na Nuvem</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="fecharGaleriaNuvem()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body" style="background: #222; padding: 10px">
+          <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 10px">
+            Clique em uma imagem para selecioná-la.
+          </p>
+          <div id="cloud-grid" class="gallery-grid"></div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="js/admin.js"></script>
   </body>
 </html>
