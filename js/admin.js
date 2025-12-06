@@ -20,6 +20,10 @@ import {
   fetchNeighborhoodsAdmin,
   addNeighborhood,
   deleteNeighborhood,
+  fetchSchedule,
+  updateSchedule,
+  fetchDashboardStats,
+  fetchOrderDossier,
 } from "./api.js";
 
 // --- Variáveis de Estado ---
@@ -28,6 +32,7 @@ let chatInterval = null;
 let produtoEmEdicaoId = null; // null = criando, número = editando
 let idParaDeletar = null; // Para o modal de segurança
 let pedidosDoDia = [];
+let chartInstance = null;
 
 // --- 1. Inicialização ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -42,9 +47,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Carrega dados iniciais
   carregarPedidosAdmin();
   carregarMenuAdmin();
+  carregarCozinha();
 
   // Inicia Polling (atualização automática)
-  setInterval(carregarPedidosAdmin, 15000); // Pedidos a cada 15s
+  setInterval(() => {
+    // Só atualiza se a aba Cozinha estiver visível
+    if (document.getElementById("panel-kitchen").classList.contains("active")) {
+      carregarCozinha();
+    }
+  }, 10000);
   setInterval(() => {
     // Chat atualiza apenas se a aba estiver aberta
     if (document.getElementById("panel-chat").classList.contains("active")) {
@@ -65,6 +76,7 @@ window.switchPanel = function (panelId) {
     .forEach((el) => el.classList.remove("active"));
   // Mostra a desejada
   document.getElementById(`panel-${panelId}`).classList.add("active");
+  if (panelId === "kitchen") carregarCozinha();
   if (panelId === "delivery") carregarBairrosAdmin();
   // Atualiza menu lateral
   document
@@ -84,7 +96,116 @@ window.adminLogout = function () {
 // =============================================================================
 //  ABA 1: PEDIDOS
 // =============================================================================
+// --- COZINHA (KDS) ---
 
+window.carregarCozinha = async function () {
+  // Busca todos os pedidos
+  const pedidos = await fetchAdminOrders();
+
+  // Filtra para as 3 colunas
+  const espera = pedidos.filter((p) => p.status === "Recebido");
+  const preparo = pedidos.filter((p) => p.status === "Em Preparo");
+  const entrega = pedidos.filter((p) => p.status === "Saiu para Entrega"); // [NOVO]
+
+  // Renderiza
+  renderizarFila("queue-waiting", espera, "espera");
+  renderizarFila("queue-prep", preparo, "preparo");
+  renderizarFila("queue-delivery", entrega, "entrega"); // [NOVO]
+};
+
+function renderizarFila(elementId, lista, tipo) {
+  const container = document.getElementById(elementId);
+
+  if (lista.length === 0) {
+    container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px; font-size:0.9rem;">Vazio</p>`;
+    return;
+  }
+
+  container.innerHTML = lista
+    .map((p) => {
+      const hora = new Date(p.date_created).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const classeAlerta = tipo === "espera" ? "card-alert" : "";
+
+      // Botões de Ação Dinâmicos
+      let btnAcao = "";
+
+      if (tipo === "espera") {
+        // Botão ACEITAR -> Vai para Preparo
+        btnAcao = `<button class="btn-primary full-width" onclick="moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
+      } else if (tipo === "preparo") {
+        // Botão ENTREGA -> Vai para Entrega
+        btnAcao = `<button class="btn-primary full-width" style="background:#3498db; border-color:#3498db;" onclick="moverParaEntrega(${p.id})">SAIR P/ ENTREGA <i class="fa-solid fa-motorcycle"></i></button>`;
+      } else if (tipo === "entrega") {
+        // [NOVO] Botão CONCLUIR -> Finaliza e remove da tela
+        btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
+      }
+
+      // Renderiza itens (comprimido para ocupar menos espaço)
+      const itensHtml = p.items
+        .map((i) => {
+          let obsHtml = "";
+          if (i.customizations_json) {
+            try {
+              const c = JSON.parse(i.customizations_json);
+              if (c.obs)
+                obsHtml = `<div class="k-obs" style="display:inline; margin-left:5px;">⚠️ ${c.obs}</div>`;
+            } catch (e) {}
+          }
+          return `<div class="k-item"><strong>${i.quantity}x ${i.product.name}</strong>${obsHtml}</div>`;
+        })
+        .join("");
+
+      return `
+            <div class="kitchen-card ${classeAlerta}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:5px;">
+                    <span style="font-size:1rem; font-weight:bold;">#${
+                      p.id
+                    } - ${p.customer_name.split(" ")[0]}</span>
+                    <span style="color:#aaa; font-size:0.9rem;">${hora}</span>
+                </div>
+                
+                <div style="margin-bottom:10px; max-height:150px; overflow-y:auto;">${itensHtml}</div>
+                
+                ${
+                  tipo === "entrega"
+                    ? `<div style="font-size:0.8rem; color:#ccc; margin-bottom:10px; background:#222; padding:5px; border-radius:4px;">📍 ${p.neighborhood}</div>`
+                    : ""
+                }
+
+                <div style="display:flex; gap:5px;">
+                    ${btnAcao}
+                    <button class="btn-small btn-cancel" onclick="imprimirComanda(${
+                      p.id
+                    })" title="Imprimir"><i class="fa-solid fa-print"></i></button>
+                </div>
+            </div>
+        `;
+    })
+    .join("");
+}
+
+// --- Ações de Mudança de Status ---
+
+window.moverParaPreparo = async function (id) {
+  await updateOrderStatus(id, "Em Preparo");
+  carregarCozinha();
+};
+
+window.moverParaEntrega = async function (id) {
+  // Não pede confirmação para ser rápido
+  await updateOrderStatus(id, "Saiu para Entrega");
+  carregarCozinha();
+};
+
+window.concluirPedidoDefinitivo = async function (id) {
+  if (confirm("Confirmar que o pedido foi entregue e pago?")) {
+    await updateOrderStatus(id, "Concluído");
+    carregarCozinha(); // O pedido sairá da coluna 'Em Entrega' e irá para o Histórico
+  }
+};
 window.carregarPedidosAdmin = async function () {
   const container = document.getElementById("admin-orders-list");
   const btn = document.querySelector("#panel-orders .btn-outline");
@@ -113,12 +234,6 @@ function renderOrderCard(p) {
 
   // Botões de Status
   let botoes = "";
-  if (p.status === "Recebido")
-    botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Em Preparo')">Aceitar 🔥</button>`;
-  else if (p.status === "Em Preparo")
-    botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Saiu para Entrega')">Enviar 🛵</button>`;
-  else if (p.status === "Saiu para Entrega")
-    botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Concluído')">Concluir ✅</button>`;
 
   if (p.status !== "Concluído" && p.status !== "Cancelado")
     botoes += ` <button class="btn-small btn-cancel" onclick="mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
@@ -127,6 +242,12 @@ function renderOrderCard(p) {
   const btnPrint = `
     <button class="btn-small" onclick="imprimirComanda(${p.id})" style="background:#555; color:white; border:none; margin-right:5px;" title="Imprimir Cupom">
         <i class="fa-solid fa-print"></i>
+    </button>
+  `;
+
+  const btnDossie = `
+    <button class="btn-small" onclick="abrirDossie(${p.id})" style="background:#444; color:#aaa; border:none; margin-right:5px;" title="Investigar Pedido">
+        <i class="fa-solid fa-magnifying-glass"></i>
     </button>
   `;
 
@@ -152,6 +273,7 @@ function renderOrderCard(p) {
         <div class="card-actions">
             ${btnPrint}
             ${botoes}
+            ${btnDossie}
         </div>
         <div style="text-align:right; font-size:0.8rem; color:#666; margin-top:5px;">${
           p.status
@@ -265,6 +387,16 @@ window.editarProduto = async function (id) {
   document.getElementById("prod-category").value = produto.category || "Lanche";
   document.getElementById("prod-desc").value = produto.description || "";
   document.getElementById("prod-image-url").value = produto.image_url || "";
+
+  if (document.getElementById("prod-stock")) {
+    document.getElementById("prod-stock").value =
+      produto.stock_quantity !== null && produto.stock_quantity !== undefined
+        ? produto.stock_quantity
+        : "";
+  }
+
+  if (document.getElementById("prod-stock"))
+    document.getElementById("prod-stock").value = "";
 
   // Preview Imagem
   if (produto.image_url) {
@@ -456,6 +588,7 @@ if (formProd) {
     const btn = formProd.querySelector('button[type="submit"]');
     btn.innerText = "Salvando...";
     btn.disabled = true;
+    const stockVal = document.getElementById("prod-stock").value;
 
     try {
       // Coleta dados simples
@@ -465,6 +598,7 @@ if (formProd) {
         category: document.getElementById("prod-category").value,
         description: document.getElementById("prod-desc").value,
         image_url: document.getElementById("prod-image-url").value,
+        stock_quantity: stockVal === "" ? null : parseInt(stockVal),
         details: {
           carnes: [],
           adicionais: [],
@@ -657,6 +791,7 @@ window.switchConfigTab = function (tabName) {
 
   if (tabName === "coupons") carregarCuponsAdmin();
   if (tabName === "users") carregarUsuariosAdmin();
+  if (tabName === "schedule") carregarHorariosAdmin();
 };
 
 // Cupons
@@ -1031,4 +1166,382 @@ window.imprimirComanda = function (id) {
     janela.print();
     // janela.close(); // Opcional: fechar automaticamente após imprimir
   }, 500);
+};
+
+const diasSemana = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+];
+
+window.carregarHorariosAdmin = async function () {
+  const lista = await fetchSchedule();
+  const tbody = document.getElementById("schedule-list-body");
+
+  tbody.innerHTML = lista
+    .map(
+      (d) => `
+        <tr data-day="${d.day_of_week}">
+            <td><strong>${diasSemana[d.day_of_week]}</strong></td>
+            <td><input type="time" class="inp-time open" value="${
+              d.open_time
+            }" style="background:#111; border:1px solid #444; color:white; padding:5px; border-radius:4px;"></td>
+            <td><input type="time" class="inp-time close" value="${
+              d.close_time
+            }" style="background:#111; border:1px solid #444; color:white; padding:5px; border-radius:4px;"></td>
+            <td>
+                <label class="checkbox-container" style="margin:0;">
+                    <input type="checkbox" class="inp-closed" ${
+                      d.is_closed ? "checked" : ""
+                    }>
+                    <span class="checkmark"></span>
+                </label>
+            </td>
+        </tr>
+    `
+    )
+    .join("");
+};
+
+window.salvarHorarios = async function () {
+  const linhas = document.querySelectorAll("#schedule-list-body tr");
+  const payload = [];
+
+  linhas.forEach((tr) => {
+    payload.push({
+      day_of_week: parseInt(tr.dataset.day),
+      open_time: tr.querySelector(".open").value,
+      close_time: tr.querySelector(".close").value,
+      is_closed: tr.querySelector(".inp-closed").checked,
+    });
+  });
+
+  if (await updateSchedule(payload)) {
+    alert("Horários atualizados!");
+  } else {
+    alert("Erro ao salvar.");
+  }
+};
+
+window.carregarDashboard = async function () {
+  const dados = await fetchDashboardStats();
+  if (!dados) return;
+
+  // Preenche cards
+  document.getElementById("stat-hoje").innerText = `R$ ${dados.hoje.toFixed(
+    2
+  )}`;
+  document.getElementById("stat-mes").innerText = `R$ ${dados.mes.toFixed(2)}`;
+
+  // Renderiza Gráfico
+  const ctx = document.getElementById("salesChart").getContext("2d");
+
+  if (chartInstance) chartInstance.destroy(); // Limpa anterior
+
+  chartInstance = new Chart(ctx, {
+    type: "bar", // ou 'line'
+    data: {
+      labels: dados.grafico.labels,
+      datasets: [
+        {
+          label: "Vendas (R$)",
+          data: dados.grafico.data,
+          backgroundColor: "#f2c94c",
+          borderColor: "#f2c94c",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: "white" } },
+      },
+      scales: {
+        y: { ticks: { color: "#ccc" }, grid: { color: "#333" } },
+        x: { ticks: { color: "#ccc" }, grid: { display: false } },
+      },
+    },
+  });
+};
+
+// --- DOSSIÊ DE INVESTIGAÇÃO ---
+window.abrirDossie = async function (id) {
+  const dossie = await fetchOrderDossier(id);
+  if (!dossie) return alert("Erro ao carregar dossiê.");
+
+  const container = document.getElementById("dossier-body");
+  const d = dossie; // Atalho
+
+  // Formata JSON dos itens para leitura
+  const itensLegiveis = d.items
+    .map((i) => ` - ${i.quantity}x ${i.product.name} (R$ ${i.price_at_time})`)
+    .join("<br>");
+
+  container.innerHTML = `
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>🆔 PEDIDO:</strong> #${d.id}<br>
+            <strong>📅 DATA:</strong> ${new Date(
+              d.date_created
+            ).toLocaleString()}<br>
+            <strong>👤 CLIENTE:</strong> ${d.customer_name} (${
+    d.customer_phone
+  })<br>
+            <strong>🚦 STATUS ATUAL:</strong> ${d.status}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>💳 PAGAMENTO:</strong><br>
+            Método: ${d.payment_method}<br>
+            Status do Pagamento: <span style="color:${
+              d.payment_status === "approved" ? "#2ecc71" : "#e74c3c"
+            }">${d.payment_status}</span><br>
+            Total Pago: R$ ${d.total_price.toFixed(2)}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>📍 ENTREGA:</strong><br>
+            ${d.street}, ${d.number}<br>
+            ${d.neighborhood} ${d.complement ? "- " + d.complement : ""}<br>
+            Taxa Cobrada: R$ ${(d.delivery_fee || 0).toFixed(2)}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px;">
+            <strong>🍔 ITENS ORIGINAIS:</strong><br>
+            ${itensLegiveis}
+        </div>
+        
+        <p style="font-size:0.8rem; color:#666; margin-top:10px; text-align:center;">
+            Documento gerado digitalmente pelo sistema Cegonha Lanches.<br>
+            ID Auditoria: ${Date.now()}-${d.id}
+        </p>
+    `;
+
+  document.getElementById("modal-dossier").style.display = "flex";
+};
+
+window.fecharDossie = function () {
+  document.getElementById("modal-dossier").style.display = "none";
+};
+
+// js/admin.js
+
+// --- FILTROS ---
+window.abrirModalFiltro = function () {
+  document.getElementById("modal-filter-orders").style.display = "flex";
+};
+
+window.fecharModalFiltro = function () {
+  document.getElementById("modal-filter-orders").style.display = "none";
+};
+
+// Mostra/Esconde inputs de data
+window.toggleDatasManuais = function () {
+  const val = document.getElementById("filter-period").value;
+  const row = document.getElementById("filter-dates-row");
+  row.style.display = val === "manual" ? "flex" : "none";
+};
+
+// Lógica Principal de Filtragem
+window.aplicarFiltros = function () {
+  const period = document.getElementById("filter-period").value;
+  const name = document.getElementById("filter-name").value;
+  const payment = document.getElementById("filter-payment").value;
+  const id = document.getElementById("filter-id").value;
+
+  let start = "";
+  let end = "";
+
+  // Calcula datas baseado na seleção
+  const hoje = new Date();
+
+  if (period === "hoje") {
+    start = hoje.toISOString().split("T")[0];
+    end = start;
+  } else if (period === "mes") {
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "ano") {
+    const primeiroDia = new Date(hoje.getFullYear(), 0, 1);
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "manual") {
+    start = document.getElementById("filter-start").value;
+    end = document.getElementById("filter-end").value;
+  }
+  // 'todos' deixa start/end vazios
+
+  // Monta objeto
+  const filtros = {};
+  if (start) filtros.start_date = start;
+  if (end) filtros.end_date = end;
+  if (name) filtros.customer_name = name;
+  if (payment) filtros.payment_method = payment;
+  if (id) filtros.order_id = id;
+
+  // Chama a função de carregar passando os filtros
+  // Precisamos atualizar a função carregarPedidosAdmin para aceitar argumentos
+  carregarPedidosAdmin(filtros);
+  fecharModalFiltro();
+};
+
+window.limparFiltros = function () {
+  document.getElementById("filter-period").value = "hoje";
+  document.getElementById("filter-name").value = "";
+  document.getElementById("filter-payment").value = "";
+  document.getElementById("filter-id").value = "";
+  toggleDatasManuais();
+  aplicarFiltros(); // Reseta para hoje
+};
+
+// --- ATUALIZE A FUNÇÃO carregarPedidosAdmin ---
+window.carregarPedidosAdmin = async function (filtrosOpcionais = null) {
+  const container = document.getElementById("admin-orders-list");
+  const btn = document.querySelector("#panel-orders .btn-outline");
+
+  if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> ...';
+
+  // Se não vier filtros (ex: clique no botão atualizar), usa padrão (hoje) ou o último usado?
+  // Para simplificar, se clicar em atualizar sem filtros, busca HOJE.
+  // Se vier do modal, usa os filtros do modal.
+
+  let filtrosFinais = filtrosOpcionais;
+  if (!filtrosFinais) {
+    // Padrão: Hoje
+    const hoje = new Date().toISOString().split("T")[0];
+    filtrosFinais = { start_date: hoje, end_date: hoje };
+  }
+
+  const pedidos = await fetchAdminOrders(filtrosFinais);
+
+  pedidosDoDia = pedidos;
+
+  container.innerHTML = pedidos.length
+    ? pedidos.map((p) => renderOrderCard(p)).join("")
+    : '<div style="text-align:center; padding:20px; color:#666; grid-column: 1 / -1;">Nenhum pedido encontrado com estes filtros.</div>';
+
+  if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
+};
+
+window.abrirModalFiltroRelatorio = function () {
+  document.getElementById("modal-filter-reports").style.display = "flex";
+};
+
+window.fecharModalFiltroRelatorio = function () {
+  document.getElementById("modal-filter-reports").style.display = "none";
+};
+
+window.toggleDatasRelatorio = function () {
+  const val = document.getElementById("rep-period").value;
+  document.getElementById("rep-dates-row").style.display =
+    val === "manual" ? "flex" : "none";
+};
+
+// js/admin.js
+
+window.aplicarFiltroRelatorio = function () {
+  const period = document.getElementById("rep-period").value;
+  const payment = document.getElementById("rep-payment").value;
+
+  let start = "";
+  let end = "";
+  const hoje = new Date();
+  start = hoje.toISOString().split("T")[0];
+  end = start;
+
+  if (period === "hoje") {
+    start = hoje.toISOString().split("T")[0];
+    end = start;
+  } else if (period === "semana") {
+    // [NOVA LÓGICA] Esta Semana (De Domingo até Hoje)
+    const primeiroDia = new Date(hoje);
+    const diaDaSemana = hoje.getDay(); // 0 = Domingo, 1 = Segunda...
+
+    // Subtrai os dias para voltar ao último Domingo
+    primeiroDia.setDate(hoje.getDate() - diaDaSemana);
+
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "mes") {
+    // Do dia 1 até hoje
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "manual") {
+    start = document.getElementById("rep-start").value;
+    end = document.getElementById("rep-end").value;
+  }
+
+  const filtros = {};
+  if (start) filtros.start_date = start;
+  if (end) filtros.end_date = end;
+  if (payment) filtros.payment_method = payment;
+
+  carregarDashboard(filtros);
+  fecharModalFiltroRelatorio();
+};
+
+// [ATUALIZADO] Função principal do Dashboard
+window.carregarDashboard = async function (filtros = {}) {
+  const btn = document.querySelector("#panel-reports .btn-outline");
+  if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  const dados = await fetchDashboardStats(filtros);
+
+  if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
+
+  if (!dados) return;
+
+  // Atualiza Textos
+  document.getElementById(
+    "stat-faturamento"
+  ).innerText = `R$ ${dados.total_periodo.toFixed(2)}`;
+  document.getElementById("stat-qtd").innerText = dados.qtd_pedidos;
+  document.getElementById(
+    "report-period-label"
+  ).innerText = `Período: ${dados.periodo_info}`;
+
+  // Renderiza Gráfico
+  const ctx = document.getElementById("salesChart").getContext("2d");
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: "line", // Mudei para linha, fica mais bonito para evolução temporal
+    data: {
+      labels: dados.grafico.labels,
+      datasets: [
+        {
+          label: "Vendas (R$)",
+          data: dados.grafico.data,
+          backgroundColor: "rgba(242, 201, 76, 0.2)",
+          borderColor: "#f2c94c",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4, // Curva suave
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: "white" } } },
+      scales: {
+        y: {
+          ticks: {
+            color: "#ccc",
+            callback: function (value) {
+              return "R$ " + value;
+            },
+          },
+          grid: { color: "#333" },
+        },
+        x: { ticks: { color: "#ccc" }, grid: { display: false } },
+      },
+    },
+  });
 };

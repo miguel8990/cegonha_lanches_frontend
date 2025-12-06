@@ -94,7 +94,6 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
   };
 
   try {
-    // Envia com Token se estiver logado (para salvar no histórico do usuário)
     const headers = {
       "Content-Type": "application/json",
       ...getAuthHeader(),
@@ -105,17 +104,15 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       headers: headers,
       body: JSON.stringify(payload),
     });
-    const respostaBack = await response.json();
 
-    // CORREÇÃO CRÍTICA: Ler o JSON apenas UMA vez
+    // CORREÇÃO: Lemos o JSON apenas UMA vez aqui
     const dados = await response.json();
 
-    // Se a resposta não for OK (ex: 400 ou 500), lança erro com a mensagem que veio
     if (!response.ok) {
       throw new Error(dados.error || "Falha ao salvar pedido");
     }
 
-    // Se chegou aqui, é sucesso
+    // Se sucesso:
     if (abrirWhatsapp) {
       enviarWhatsApp(frontData, dados.id);
     }
@@ -123,7 +120,7 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
     return {
       success: true,
       orderId: dados.id,
-      redirectUrl: dados.redirect_url, // URL do Mercado Pago (ou simulação)
+      redirectUrl: dados.redirect_url, // Link do Mercado Pago
     };
   } catch (error) {
     console.error("Erro Envio:", error);
@@ -338,19 +335,6 @@ export async function toggleAvailability(id) {
     return response.ok;
   } catch (error) {
     return false;
-  }
-}
-
-export async function fetchAdminOrders() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/admin`, {
-      headers: getAuthHeader(),
-    });
-    if (!response.ok) throw new Error("Erro ao buscar pedidos");
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return [];
   }
 }
 
@@ -611,4 +595,72 @@ export async function deleteNeighborhood(id) {
     headers: getAuthHeader(),
   });
   return res.ok;
+}
+
+// js/api.js
+
+export async function fetchSchedule() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/schedule`);
+    return res.ok ? await res.json() : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function updateSchedule(data) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/config/schedule`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...getAuthHeader() },
+      body: JSON.stringify(data),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+// js/api.js
+
+export async function fetchDashboardStats(filtros = {}) {
+  try {
+    const params = new URLSearchParams(filtros).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/dashboard?${params}`, {
+      headers: getAuthHeader(),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchOrderDossier(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/reports/dossier/${id}`, {
+      headers: getAuthHeader(),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+// js/api.js
+
+export async function fetchAdminOrders(filtros = {}) {
+  try {
+    // Converte objeto { nome: 'joao' } em string "?nome=joao"
+    const params = new URLSearchParams(filtros).toString();
+
+    const response = await fetch(`${API_BASE_URL}/orders/admin?${params}`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) throw new Error("Erro ao buscar pedidos");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
 }

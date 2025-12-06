@@ -14,6 +14,7 @@ import {
   sendChatMessage,
   fetchPublicCoupons,
   fetchNeighborhoodsPublic,
+  fetchSchedule,
 } from "./api.js";
 
 // Estado Global
@@ -24,6 +25,7 @@ let cuponsDisponiveis = [];
 let cupomSelecionado = null; // Objeto do cupom
 let taxaEntregaAtual = 0;
 let lojaAberta = false;
+let horariosGlobal = [];
 
 window.showToast = function (message, type = "info") {
   const container = document.getElementById("toast-container");
@@ -808,9 +810,7 @@ async function initBairrosSelect() {
   }
 
   bairros.forEach((b) => {
-    select.innerHTML += `<option value="${b.name}" data-price="${b.price}">${
-      b.name
-    } (+ R$ ${b.price.toFixed(2)})</option>`;
+    select.innerHTML += `<option value="${b.name}" data-price="${b.price}">${b.name} </option>`;
   });
 
   // Evento ao mudar a opção
@@ -1009,35 +1009,72 @@ function initContactForm() {
     }
   });
 }
-function initHorarioFuncionamento() {
+
+async function initHorarioFuncionamento() {
   const statusBox = document.getElementById("status-funcionamento");
   const statusText = statusBox ? statusBox.querySelector(".status-text") : null;
 
+  // 1. Busca horários do banco se ainda não tiver
+  if (horariosGlobal.length === 0) {
+    horariosGlobal = await fetchSchedule();
+  }
+
+  // Se falhar a busca, usa um fallback seguro (fechado ou horário padrão)
+  if (horariosGlobal.length === 0) {
+    console.warn("Não foi possível carregar horários. Usando padrão.");
+    // Fallback manual se quiser, ou deixa vazio para tentar de novo
+  }
+
   const agora = new Date();
-  const horas = agora.getHours();
-  const mins = horas * 60 + agora.getMinutes();
-  const dia = agora.getDay(); // 0 = Domingo
+  const diaHoje = agora.getDay(); // 0-6
+  const minsAgora = agora.getHours() * 60 + agora.getMinutes();
 
-  // Horário: 18:30 (1110 min) às 22:30 (1350 min)
-  // Fechado aos Domingos (dia === 0)
-  const horarioOk = mins >= 0 && mins < 1350;
-  const diaOk = dia !== 0;
+  // 2. Encontra a regra de hoje
+  const regraHoje = horariosGlobal.find((d) => d.day_of_week === diaHoje);
 
-  // Atualiza variável global
-  lojaAberta = horarioOk && diaOk;
+  let estaAberto = false;
+  let texto = "Fechado";
 
-  // [DEBUG] Se quiser testar "Fechado" agora, descomente a linha abaixo:
-  // lojaAberta = false;
+  if (regraHoje) {
+    if (regraHoje.is_closed) {
+      estaAberto = false;
+      texto = "Fechado hoje";
+    } else {
+      // Converte "18:30" para minutos (18*60 + 30 = 1110)
+      const [hAbre, mAbre] = regraHoje.open_time.split(":").map(Number);
+      const [hFecha, mFecha] = regraHoje.close_time.split(":").map(Number);
 
+      const minAbre = hAbre * 60 + mAbre;
+      let minFecha = hFecha * 60 + mFecha;
+
+      // Tratamento para madrugada (ex: fecha as 01:00 do dia seguinte)
+      // Se fecha menor que abre (ex: abre 18:00 fecha 01:00), somamos 24h ao fecha
+      if (minFecha < minAbre) minFecha += 24 * 60;
+
+      // Ajuste se já passou da meia noite (agora é 00:30, mas pertence ao turno de ontem)
+      // Isso é complexo. Para simplificar no seu modelo "diário":
+      // Vamos assumir funcionamento no mesmo dia ou até o final da noite.
+
+      estaAberto = minsAgora >= minAbre && minsAgora < minFecha;
+
+      texto = estaAberto
+        ? `Aberto • Fecha às ${regraHoje.close_time}`
+        : `Fechado • Abre às ${regraHoje.open_time}`;
+    }
+  }
+
+  // Atualiza Global
+  lojaAberta = estaAberto;
+  // lojaAberta = true; // DEBUG: Descomente para testar aberto forçado
+
+  // Atualiza UI
   if (statusBox && statusText) {
     statusBox.className =
       "status-box " + (lojaAberta ? "status-open" : "status-closed");
-    statusText.innerText = lojaAberta
-      ? "Aberto agora • Fecha às 22:30"
-      : "Fechado • Abre às 18:30";
+    statusText.innerText = texto;
   }
 
-  // Verifica a cada minuto
+  // Re-executa a cada minuto
   setTimeout(initHorarioFuncionamento, 60000);
 }
 // --- MINHA CONTA ---

@@ -496,3 +496,112 @@ td {
 .gallery-item:hover .btn-delete-img {
   opacity: 1;
 }
+
+/* --- PAINEL DE COZINHA (KDS) --- */
+.kitchen-container {
+  display: grid; /* Mudança: Usamos Grid em vez de Flex */
+  grid-template-columns: 1fr 1fr 1fr; /* Cria 3 colunas com frações iguais (33% cada) */
+  gap: 20px;
+  height: calc(100vh - 120px); /* Ocupa a altura disponível */
+
+  /* Garante que as colunas não fiquem esmagadas em telas pequenas */
+  min-width: 900px;
+  overflow-x: auto; /* Cria barra de rolagem lateral se precisar */
+  padding-bottom: 10px; /* Espaço para a barra de rolagem não tapar o conteúdo */
+}
+
+.kitchen-column {
+  /* Removemos o 'flex: 1' antigo */
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%; /* Garante altura total */
+}
+.kitchen-header {
+  padding: 15px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+  background-color: #222;
+}
+
+.header-espera {
+  color: #2ecc71;
+  border-top: 4px solid #2ecc71;
+}
+.header-preparo {
+  color: #f1c40f;
+  border-top: 4px solid #f1c40f;
+}
+
+.kitchen-list {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Card da Cozinha (Mais compacto que o do Admin) */
+.kitchen-card {
+  background-color: #252525;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 15px;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+/* ANIMAÇÃO DE ALERTA (Piscando Verde) */
+@keyframes pulse-alert {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
+    border-color: #2ecc71;
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+    border-color: #2ecc71;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+    border-color: #2ecc71;
+  }
+}
+
+.card-alert {
+  animation: pulse-alert 2s infinite;
+}
+
+/* Itens do Pedido na Cozinha */
+.k-item {
+  border-bottom: 1px dashed #444;
+  padding: 5px 0;
+  font-size: 1rem;
+}
+.k-item:last-child {
+  border-bottom: none;
+}
+.k-obs {
+  color: #f1c40f;
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+/* Cor para o cabeçalho da coluna de Entrega */
+.header-entrega {
+  color: #3498db; /* Azul */
+  border-top: 4px solid #3498db;
+}
+
+/* Ajuste opcional: Se em telas pequenas as 3 colunas ficarem apertadas */
+@media (max-width: 1024px) {
+  .kitchen-container {
+    min-width: 900px; /* Força rolagem lateral se necessário */
+    overflow-x: auto;
+  }
+}
