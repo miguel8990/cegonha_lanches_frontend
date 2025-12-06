@@ -61,6 +61,8 @@ export const fetchCombos = async () => {
 };
 
 // --- PEDIDOS ---
+// site/js/api.js
+
 export async function submitOrder(frontData, abrirWhatsapp = true) {
   // Traduz o carrinho visual para IDs
   const itemsFormatados = frontData.cartItems.map((item) => ({
@@ -105,25 +107,23 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
     });
     const respostaBack = await response.json();
 
-    if (abrirWhatsapp) {
-      enviarWhatsApp(frontData, respostaBack.id);
-    }
+    // CORREÇÃO CRÍTICA: Ler o JSON apenas UMA vez
+    const dados = await response.json();
 
+    // Se a resposta não for OK (ex: 400 ou 500), lança erro com a mensagem que veio
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Falha ao salvar");
+      throw new Error(dados.error || "Falha ao salvar pedido");
     }
 
-    const pedido = await response.json();
-
+    // Se chegou aqui, é sucesso
     if (abrirWhatsapp) {
-      enviarWhatsApp(frontData, pedido.id);
+      enviarWhatsApp(frontData, dados.id);
     }
 
     return {
       success: true,
-      orderId: respostaBack.id,
-      redirectUrl: respostaBack.redirect_url,
+      orderId: dados.id,
+      redirectUrl: dados.redirect_url, // URL do Mercado Pago (ou simulação)
     };
   } catch (error) {
     console.error("Erro Envio:", error);
@@ -578,4 +578,37 @@ export async function deleteCloudImage(publicId) {
     console.error(e);
     return false;
   }
+}
+// --- DELIVERY ---
+export async function fetchNeighborhoodsAdmin() {
+  const res = await fetch(`${API_BASE_URL}/delivery/admin`, {
+    headers: getAuthHeader(),
+  });
+  return res.ok ? await res.json() : [];
+}
+
+export async function fetchNeighborhoodsPublic() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/delivery`);
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addNeighborhood(data) {
+  const res = await fetch(`${API_BASE_URL}/delivery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify(data),
+  });
+  return res.ok;
+}
+
+export async function deleteNeighborhood(id) {
+  const res = await fetch(`${API_BASE_URL}/delivery/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeader(),
+  });
+  return res.ok;
 }

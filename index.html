@@ -228,13 +228,21 @@
                 <div class="form-row">
                   <div class="form-group" style="flex: 1">
                     <label for="bairro">Bairro</label>
-                    <input
-                      type="text"
+                    <select
                       id="bairro"
                       name="bairro"
                       required
-                      placeholder="Ex: Centro"
-                    />
+                      style="
+                        width: 100%;
+                        padding: 12px;
+                        background-color: var(--color-black);
+                        border: 1px solid #444;
+                        border-radius: var(--border-radius);
+                        color: var(--color-text);
+                      "
+                    >
+                      <option value="" disabled selected>Selecione...</option>
+                    </select>
                   </div>
                   <div class="form-group" style="flex: 1">
                     <label for="comp">Complemento</label>
@@ -245,6 +253,13 @@
                       placeholder="Apto, Fundos..."
                     />
                   </div>
+                </div>
+                <div class="delivery-fee-container">
+                  <span class="delivery-fee-label"
+                    ><i class="fa-solid fa-motorcycle"></i> Taxa de
+                    Entrega:</span
+                  >
+                  <span id="delivery-fee-display">R$ 0,00</span>
                 </div>
               </div>
 
@@ -861,6 +876,35 @@
             Adicionar ao Pedido
           </button>
         </div>
+      </div>
+    </div>
+
+    <div id="modal-closed" class="modal-overlay" style="z-index: 5000">
+      <div
+        class="modal-content auth-content"
+        style="max-width: 400px; text-align: center; padding: 30px"
+      >
+        <div style="margin-bottom: 20px">
+          <i
+            class="fa-solid fa-store-slash"
+            style="font-size: 3rem; color: var(--color-red)"
+          ></i>
+        </div>
+        <h3 style="color: white; margin-bottom: 10px">Estamos Fechados!</h3>
+        <p style="color: #ccc; margin-bottom: 20px">
+          Nosso horário de funcionamento é de
+          <strong>18:30 às 22:30</strong> (exceto Domingos).
+        </p>
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px">
+          Você pode montar seu pedido, mas só conseguirá finalizar quando
+          abrirmos.
+        </p>
+        <button
+          class="btn-primary full-width"
+          onclick="document.getElementById('modal-closed').style.display='none'"
+        >
+          Entendi, vou aguardar
+        </button>
       </div>
     </div>
 

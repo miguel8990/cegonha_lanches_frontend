@@ -13,6 +13,7 @@ import {
   getChatMessages,
   sendChatMessage,
   fetchPublicCoupons,
+  fetchNeighborhoodsPublic,
 } from "./api.js";
 
 // Estado Global
@@ -21,6 +22,8 @@ let menuGlobal = [];
 let itemEmPersonalizacao = null;
 let cuponsDisponiveis = [];
 let cupomSelecionado = null; // Objeto do cupom
+let taxaEntregaAtual = 0;
+let lojaAberta = false;
 
 window.showToast = function (message, type = "info") {
   const container = document.getElementById("toast-container");
@@ -48,10 +51,13 @@ window.showToast = function (message, type = "info") {
 document.addEventListener("DOMContentLoaded", () => {
   initMenu();
   initCombos();
+  carregarCarrinhoLocal();
   initContactForm();
   initMobileMenu();
   initScrollEffects();
   initHorarioFuncionamento();
+  initBairrosSelect();
+  salvarCarrinhoLocal();
 
   // Verifica Login ao carregar
   checkLoginState();
@@ -131,6 +137,7 @@ window.toggleChat = toggleChat;
 window.enviarMensagemChat = enviarMensagemChat;
 window.handleChatKey = handleChatKey;
 window.toggleTroco = toggleTroco;
+
 // --- 1. AUTENTICAÇÃO ---
 
 function checkLoginState() {
@@ -341,12 +348,15 @@ function adicionarAoCarrinho(nome, preco, dadosExtras = {}) {
   atualizarBotoesMenu();
   animarCarrinho();
   showToast(`${nome} adicionado!`, "success");
+  salvarCarrinhoLocal();
 }
 
 function removerItem(index) {
   carrinho.splice(index, 1);
   atualizarCarrinhoUI();
   atualizarBotoesMenu();
+  showToast(`${nome} removido!`, "success");
+  salvarCarrinhoLocal();
 }
 
 function atualizarCarrinhoUI() {
@@ -689,6 +699,7 @@ function alterarQuantidadeCarrinho(nome, delta) {
   }
   atualizarCarrinhoUI();
   atualizarBotoesMenu();
+  salvarCarrinhoLocal();
 }
 function atualizarBotoesMenu() {
   document.querySelectorAll(".btn-add-item").forEach((btn) => {
@@ -780,6 +791,42 @@ function createComboCard(item) {
         </div>
     </div>`;
 }
+
+async function initBairrosSelect() {
+  const select = document.getElementById("bairro");
+  if (!select) return;
+
+  const bairros = await fetchNeighborhoodsPublic();
+
+  // Limpa e preenche
+  select.innerHTML =
+    '<option value="" disabled selected>Selecione seu Bairro...</option>';
+
+  if (bairros.length === 0) {
+    select.innerHTML +=
+      '<option value="" disabled>Nenhum bairro cadastrado</option>';
+  }
+
+  bairros.forEach((b) => {
+    select.innerHTML += `<option value="${b.name}" data-price="${b.price}">${
+      b.name
+    } (+ R$ ${b.price.toFixed(2)})</option>`;
+  });
+
+  // Evento ao mudar a opção
+  select.addEventListener("change", function () {
+    const option = this.options[this.selectedIndex];
+    // Se não tiver preço (ex: opção padrão), assume 0
+    taxaEntregaAtual = parseFloat(option.getAttribute("data-price") || 0);
+
+    // Atualiza o texto na tela
+    const display = document.getElementById("delivery-fee-display");
+    if (display) {
+      display.innerText = `R$ ${taxaEntregaAtual.toFixed(2).replace(".", ",")}`;
+    }
+  });
+}
+
 function initContactForm() {
   const form = document.getElementById("contact-form");
   if (!form) return;
@@ -792,19 +839,30 @@ function initContactForm() {
   // 1. LÓGICA DA RETIRADA (Corrigida)
   if (retiradaCheck && addressSection) {
     // Função interna para alternar visibilidade
+    // Função interna para alternar visibilidade
     const toggleAddress = () => {
+      const bairroSelect = document.getElementById("bairro"); // Pega o select
+
       if (retiradaCheck.checked) {
         addressSection.style.display = "none"; // Esconde endereço
-        // Remove obrigatoriedade dos inputs escondidos para não travar o envio
+
+        // Remove obrigatoriedade dos inputs escondidos
         addressSection
           .querySelectorAll("input")
           .forEach((i) => i.removeAttribute("required"));
+
+        // [CORREÇÃO] Remove obrigatoriedade do Select de Bairro
+        if (bairroSelect) bairroSelect.removeAttribute("required");
       } else {
         addressSection.style.display = "block"; // Mostra endereço
-        // Devolve a obrigatoriedade
+
+        // Devolve a obrigatoriedade dos inputs
         addressSection.querySelectorAll("input").forEach((i) => {
           if (i.name !== "comp") i.setAttribute("required", "true");
         });
+
+        // [CORREÇÃO] Devolve obrigatoriedade do Bairro
+        if (bairroSelect) bairroSelect.setAttribute("required", "true");
       }
     };
 
@@ -833,10 +891,21 @@ function initContactForm() {
   // 3. ENVIO DO FORMULÁRIO
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    //bloqueio de loja fechada
+
+    if (!lojaAberta) {
+      document.getElementById("modal-closed").style.display = "flex";
+      return; // Para tudo, não envia nada
+    }
 
     // Identifica qual botão clicou (Sistema ou WhatsApp)
     const btnClicado = e.submitter;
     const deveAbrirZap = btnClicado && btnClicado.id === "btn-submit-whatsapp";
+    const totalProdutos = carrinho.reduce(
+      (a, b) => a + b.preco * b.quantity,
+      0
+    );
+    const totalFinal = totalProdutos + taxaEntregaAtual; // Soma o frete
 
     // Validação Básica
     const name = document.getElementById("name").value;
@@ -889,6 +958,7 @@ function initContactForm() {
         : document.getElementById("address").value,
       number: isRetirada ? "0" : document.getElementById("number").value,
       bairro: isRetirada ? "-" : document.getElementById("bairro").value,
+
       comp: isRetirada ? "" : document.getElementById("comp").value,
 
       message: document.getElementById("message").value,
@@ -896,6 +966,7 @@ function initContactForm() {
       resumoCarrinho: resumoTexto,
       total: total,
       cartItems: carrinho,
+      total: totalFinal, // Envia o total já com frete
       coupon_code: cupomSelecionado ? cupomSelecionado.code : null,
     };
 
@@ -922,6 +993,8 @@ function initContactForm() {
         showToast(`Pedido #${res.orderId} enviado com sucesso!`);
 
       carrinho = [];
+
+      salvarCarrinhoLocal();
       atualizarCarrinhoUI();
       atualizarBotoesMenu();
       form.reset();
@@ -938,20 +1011,33 @@ function initContactForm() {
 }
 function initHorarioFuncionamento() {
   const statusBox = document.getElementById("status-funcionamento");
-  if (!statusBox) return;
-  const statusText = statusBox.querySelector(".status-text");
+  const statusText = statusBox ? statusBox.querySelector(".status-text") : null;
 
   const agora = new Date();
-  const mins = agora.getHours() * 60 + agora.getMinutes();
-  const dia = agora.getDay();
-  // 18:30 (1110) a 22:30 (1350), exceto Domingo (0)
-  const aberto = dia !== 0 && mins >= 1110 && mins < 1350;
+  const horas = agora.getHours();
+  const mins = horas * 60 + agora.getMinutes();
+  const dia = agora.getDay(); // 0 = Domingo
 
-  statusBox.className =
-    "status-box " + (aberto ? "status-open" : "status-closed");
-  statusText.innerText = aberto
-    ? "Aberto agora • Fecha às 22:30"
-    : "Fechado • Abre às 18:30";
+  // Horário: 18:30 (1110 min) às 22:30 (1350 min)
+  // Fechado aos Domingos (dia === 0)
+  const horarioOk = mins >= 0 && mins < 1350;
+  const diaOk = dia !== 0;
+
+  // Atualiza variável global
+  lojaAberta = horarioOk && diaOk;
+
+  // [DEBUG] Se quiser testar "Fechado" agora, descomente a linha abaixo:
+  // lojaAberta = false;
+
+  if (statusBox && statusText) {
+    statusBox.className =
+      "status-box " + (lojaAberta ? "status-open" : "status-closed");
+    statusText.innerText = lojaAberta
+      ? "Aberto agora • Fecha às 22:30"
+      : "Fechado • Abre às 18:30";
+  }
+
+  // Verifica a cada minuto
   setTimeout(initHorarioFuncionamento, 60000);
 }
 // --- MINHA CONTA ---
@@ -1605,4 +1691,26 @@ function atualizarVisualDesconto() {
 
   valSpan.innerText = `- R$ ${desconto.toFixed(2).replace(".", ",")}`;
   display.style.display = "block";
+}
+// =========================================
+//  SISTEMA DE PERSISTÊNCIA (MEMÓRIA)
+// =========================================
+
+// 1. Salva o carrinho atual no navegador
+function salvarCarrinhoLocal() {
+  console.log("💾 Salvando carrinho...", carrinho);
+  localStorage.setItem("cegonha_cart", JSON.stringify(carrinho));
+}
+
+// 2. Recupera o carrinho quando o site abre
+function carregarCarrinhoLocal() {
+  const salvo = localStorage.getItem("cegonha_cart");
+  if (salvo) {
+    carrinho = JSON.parse(salvo);
+    console.log("📂 Carrinho recuperado:", carrinho);
+
+    // Atualiza o visual (totais, bolinhas vermelhas, lista lateral)
+    atualizarCarrinhoUI();
+    atualizarBotoesMenu();
+  }
 }

@@ -17,6 +17,9 @@ import {
   fetchUsersList,
   fetchCloudGallery,
   deleteCloudImage,
+  fetchNeighborhoodsAdmin,
+  addNeighborhood,
+  deleteNeighborhood,
 } from "./api.js";
 
 // --- Variáveis de Estado ---
@@ -24,6 +27,7 @@ let chatUserIdAtivo = null;
 let chatInterval = null;
 let produtoEmEdicaoId = null; // null = criando, número = editando
 let idParaDeletar = null; // Para o modal de segurança
+let pedidosDoDia = [];
 
 // --- 1. Inicialização ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -61,7 +65,7 @@ window.switchPanel = function (panelId) {
     .forEach((el) => el.classList.remove("active"));
   // Mostra a desejada
   document.getElementById(`panel-${panelId}`).classList.add("active");
-
+  if (panelId === "delivery") carregarBairrosAdmin();
   // Atualiza menu lateral
   document
     .querySelectorAll(".sidebar-menu button")
@@ -85,10 +89,14 @@ window.carregarPedidosAdmin = async function () {
   const container = document.getElementById("admin-orders-list");
   const btn = document.querySelector("#panel-orders .btn-outline");
 
-  // Feedback visual no botão
+  // Feedback visual
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> ...';
 
+  // Busca da API
   const pedidos = await fetchAdminOrders();
+
+  // [NOVO] Salva na memória global para a impressão usar
+  pedidosDoDia = pedidos;
 
   container.innerHTML = pedidos.length
     ? pedidos.map((p) => renderOrderCard(p)).join("")
@@ -103,7 +111,7 @@ function renderOrderCard(p) {
     minute: "2-digit",
   });
 
-  // Botões Dinâmicos conforme Status
+  // Botões de Status
   let botoes = "";
   if (p.status === "Recebido")
     botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Em Preparo')">Aceitar 🔥</button>`;
@@ -112,11 +120,17 @@ function renderOrderCard(p) {
   else if (p.status === "Saiu para Entrega")
     botoes = `<button class="btn-small btn-next" onclick="mudarStatus(${p.id}, 'Concluído')">Concluir ✅</button>`;
 
-  // Botão Cancelar (disponível se não estiver concluído ou cancelado)
   if (p.status !== "Concluído" && p.status !== "Cancelado")
     botoes += ` <button class="btn-small btn-cancel" onclick="mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
 
-  // Itens do Pedido
+  // [NOVO] Botão de Imprimir (Sempre visível)
+  const btnPrint = `
+    <button class="btn-small" onclick="imprimirComanda(${p.id})" style="background:#555; color:white; border:none; margin-right:5px;" title="Imprimir Cupom">
+        <i class="fa-solid fa-print"></i>
+    </button>
+  `;
+
+  // Itens
   const itemsHtml = p.items
     .map((i) => `<div><strong>${i.quantity}x ${i.product.name}</strong></div>`)
     .join("");
@@ -135,7 +149,10 @@ function renderOrderCard(p) {
             💳 <strong>${p.payment_method}</strong><br>
             <span style="color:gold">R$ ${p.total_price.toFixed(2)}</span>
         </div>
-        <div class="card-actions">${botoes}</div>
+        <div class="card-actions">
+            ${btnPrint}
+            ${botoes}
+        </div>
         <div style="text-align:right; font-size:0.8rem; color:#666; margin-top:5px;">${
           p.status
         }</div>
@@ -845,5 +862,173 @@ async function apagarImagemCloud(event, publicId) {
   }
 }
 
+window.carregarBairrosAdmin = async function () {
+  const lista = await fetchNeighborhoodsAdmin();
+  const container = document.getElementById("delivery-list");
+
+  container.innerHTML = lista
+    .map(
+      (b) => `
+        <div class="coupon-card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong style="color:var(--color-gold); font-size:1.1rem;">${
+                  b.name
+                }</strong>
+                <div style="color:#ccc;">Taxa: R$ ${b.price.toFixed(2)}</div>
+            </div>
+            <button class="btn-small btn-cancel" onclick="apagarBairro(${
+              b.id
+            })">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+    `
+    )
+    .join("");
+};
+
+window.adicionarBairro = async function () {
+  const nome = document.getElementById("new-bairro-name").value;
+  const preco = document.getElementById("new-bairro-price").value;
+
+  if (!nome || !preco) return alert("Preencha nome e valor");
+
+  if (await addNeighborhood({ name: nome, price: preco })) {
+    document.getElementById("new-bairro-name").value = "";
+    document.getElementById("new-bairro-price").value = "";
+    carregarBairrosAdmin();
+  } else {
+    alert("Erro ao salvar (Bairro já existe?)");
+  }
+};
+
+window.apagarBairro = async function (id) {
+  if (confirm("Remover este bairro?")) {
+    await deleteNeighborhood(id);
+    carregarBairrosAdmin();
+  }
+};
+
 // Exporta a função de apagar para o HTML poder usar no onclick
 window.apagarImagemCloud = apagarImagemCloud;
+
+// ==========================================
+//  SISTEMA DE IMPRESSÃO TÉRMICA
+// ==========================================
+
+window.imprimirComanda = function (id) {
+  // 1. Encontra o pedido na memória
+  const pedido = pedidosDoDia.find((p) => p.id === id);
+  if (!pedido)
+    return alert("Erro: Pedido não encontrado na memória. Atualize a página.");
+
+  // 2. Formata Data
+  const dataObj = new Date(pedido.date_created);
+  const dataFormatada =
+    dataObj.toLocaleDateString("pt-BR") +
+    " " +
+    dataObj.toLocaleTimeString("pt-BR").slice(0, 5);
+
+  // 3. Monta Itens
+  let itensHtml = "";
+  pedido.items.forEach((item) => {
+    // Processa personalizações para exibir no papel
+    let detalhes = "";
+    if (item.customizations_json) {
+      try {
+        const cust = JSON.parse(item.customizations_json);
+        const lista = [
+          ...(cust.carnes || []),
+          ...(cust.adicionais || []),
+          ...(cust.acompanhamentos || []),
+          ...(cust.bebidas || []),
+        ];
+        if (lista.length > 0)
+          detalhes = `<div style="font-size:10px; margin-left:10px; color:#444;">+ ${lista.join(
+            ", "
+          )}</div>`;
+        if (cust.obs)
+          detalhes += `<div style="font-size:10px; margin-left:10px; font-weight:bold;">OBS: ${cust.obs}</div>`;
+      } catch (e) {}
+    }
+
+    itensHtml += `
+      <div style="margin-bottom:5px; border-bottom:1px dashed #ccc; padding-bottom:2px;">
+        <div style="display:flex; justify-content:space-between; font-weight:bold;">
+            <span>${item.quantity}x ${item.product.name}</span>
+            <span>R$ ${(item.price_at_time * item.quantity).toFixed(2)}</span>
+        </div>
+        ${detalhes}
+      </div>
+    `;
+  });
+
+  // 4. Monta o Layout da Comanda (HTML Puro)
+  const conteudoJanela = `
+    <html>
+      <head>
+        <title>Pedido #${pedido.id}</title>
+        <style>
+          @page { margin: 0; }
+          body { font-family: 'Courier New', monospace; font-size: 12px; margin: 0; padding: 10px; width: 300px; color: #000; }
+          .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+          .section { margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+          .bold { font-weight: bold; }
+          .big { font-size: 14px; }
+          .center { text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="big bold">CEGONHA LANCHES</div>
+          <div>Itapagipe - MG</div>
+          <div style="margin-top:5px;">PEDIDO #${pedido.id}</div>
+          <div>${dataFormatada}</div>
+        </div>
+
+        <div class="section">
+          <div class="bold">CLIENTE:</div>
+          <div>${pedido.customer_name || "Consumidor"}</div>
+          <div>Tel: ${pedido.customer_phone || "-"}</div>
+          <div style="margin-top:5px;" class="bold">ENTREGA:</div>
+          <div>${pedido.street}, ${pedido.number}</div>
+          <div>${pedido.neighborhood} ${
+    pedido.complement ? "- " + pedido.complement : ""
+  }</div>
+        </div>
+
+        <div class="section">
+          <div class="bold" style="margin-bottom:5px;">ITENS:</div>
+          ${itensHtml}
+        </div>
+
+        <div class="section">
+          <div style="display:flex; justify-content:space-between;">
+             <span>Taxa Entrega:</span>
+             <span>R$ ${(pedido.delivery_fee || 0).toFixed(2)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; margin-top:5px;">
+             <span>TOTAL:</span>
+             <span>R$ ${pedido.total_price.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="center">
+          <div>Pagamento: <strong>${pedido.payment_method}</strong></div>
+          <div style="margin-top:10px; font-size:10px;">Sistema Cegonha Lanches</div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  // 5. Abre Janela e Imprime
+  const janela = window.open("", "_blank", "width=350,height=600");
+  janela.document.write(conteudoJanela);
+  janela.document.close();
+
+  // Aguarda carregar para imprimir
+  setTimeout(() => {
+    janela.print();
+    // janela.close(); // Opcional: fechar automaticamente após imprimir
+  }, 500);
+};
