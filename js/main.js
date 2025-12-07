@@ -320,6 +320,13 @@ function initAuthModalLogic() {
 
     regForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const passwordVal = regForm.querySelector('input[name="password"]').value; // Aqui nasce a variável!
+      const checkSenha = validarForcaSenha(passwordVal);
+
+      if (!checkSenha.valid) {
+        showToast("Senha fraca: " + checkSenha.msg, "warning");
+        return; // Se for fraca, para aqui. Não envia nada.
+      }
 
       // Captura os dados
       const data = {
