@@ -1,13 +1,15 @@
 // site/js/api.js
 
+import { getToken } from "./auth.js";
+
 const API_BASE_URL = "http://localhost:5000/api";
 
 // --- HELPERS ---
 function getAuthHeader() {
-  const token = localStorage.getItem("token");
+  // Pega do cookie agora
+  const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-
 // Traduz o produto do Backend para o formato do Frontend
 function adaptarProduto(produtoBack) {
   let detalhes = {};

@@ -16,6 +16,14 @@ import {
   fetchNeighborhoodsPublic,
   fetchSchedule,
 } from "./api.js";
+import {
+  checkMagicLinkReturn,
+  abrirModalLogin,
+  getSession,
+  saveSession,
+  clearSession,
+  pedirMagicLink,
+} from "./auth.js";
 
 // Estado Global
 let carrinho = [];
@@ -60,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initHorarioFuncionamento();
   initBairrosSelect();
   salvarCarrinhoLocal();
+  checkMagicLinkReturn();
 
   // Verifica Login ao carregar
   checkLoginState();
@@ -143,8 +152,7 @@ window.toggleTroco = toggleTroco;
 // --- 1. AUTENTICAÇÃO ---
 
 function checkLoginState() {
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { token, user } = getSession();
 
   const btnLogin = document.getElementById("btn-open-login");
   const profileArea = document.getElementById("user-profile-area");
@@ -189,8 +197,10 @@ function checkLoginState() {
     if (adminLink) adminLink.style.display = "none"; // Garante que suma
   }
 }
-function openAuthModal() {
+
+export function openAuthModal() {
   document.getElementById("modal-auth").style.display = "flex";
+  switchAuthTab("login");
 }
 
 function closeAuthModal() {
@@ -224,49 +234,68 @@ function closeAuthModal() {
 }
 
 function switchAuthTab(tab) {
-  const loginForm = document.getElementById("form-login");
+  const magicForm = document.getElementById("form-magic-login");
+  const passForm = document.getElementById("form-password-login");
   const regForm = document.getElementById("form-register");
   const btns = document.querySelectorAll(".tab-btn");
 
   if (tab === "login") {
-    loginForm.style.display = "block";
+    // Por padrão, mostra o Magic Link ao abrir a aba Login
+    magicForm.style.display = "block";
+    passForm.style.display = "none";
     regForm.style.display = "none";
-    btns[0].classList.add("active");
-    btns[1].classList.remove("active");
+
+    if (btns[0]) btns[0].classList.add("active");
+    if (btns[1]) btns[1].classList.remove("active");
   } else {
-    loginForm.style.display = "none";
+    // Aba Cadastro
+    magicForm.style.display = "none";
+    passForm.style.display = "none";
     regForm.style.display = "block";
-    btns[0].classList.remove("active");
-    btns[1].classList.add("active");
+
+    if (btns[0]) btns[0].classList.remove("active");
+    if (btns[1]) btns[1].classList.add("active");
   }
 }
 
 function initAuthModalLogic() {
-  // Login Submit
-  const loginForm = document.getElementById("form-login");
-  if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const inputs = loginForm.querySelectorAll("input");
-      const email = inputs[0].value;
-      const pass = inputs[1].value;
+  // 1. Magic Link Submit
+  const magicForm = document.getElementById("form-magic-login");
+  if (magicForm) {
+    magicForm.addEventListener("submit", pedirMagicLink);
+  }
 
-      const btn = loginForm.querySelector("button");
-      const txt = btn.innerText;
+  // 2. [NOVO] Password Login Submit
+  const passForm = document.getElementById("form-password-login");
+  if (passForm) {
+    passForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+      const btn = passForm.querySelector("button");
+      const originalText = btn.innerText;
+
       btn.innerText = "Entrando...";
       btn.disabled = true;
 
-      const res = await loginUser(email, pass);
+      // Chama a função de login da API (já existente)
+      const res = await loginUser(email, password);
 
       if (res.success) {
-        localStorage.setItem("token", res.token);
-        localStorage.setItem("user", JSON.stringify(res.user));
+        // Salva sessão (Cookies) e atualiza a tela
+        saveSession(res.token, res.user);
         checkLoginState();
         closeAuthModal();
+        showToast(
+          `Bem-vindo de volta, ${res.user.name.split(" ")[0]}!`,
+          "success"
+        );
       } else {
-        showToast(res.error);
+        showToast(res.error || "Email ou senha incorretos.", "error");
       }
-      btn.innerText = txt;
+
+      btn.innerText = originalText;
       btn.disabled = false;
     });
   }
@@ -309,8 +338,10 @@ function initAuthModalLogic() {
       const res = await registerUser(data);
 
       if (res.success) {
-        showToast("Conta criada com sucesso! Faça login.");
-        switchAuthTab("login");
+        showToast(
+          "Cadastro criado! Um link de confirmação foi enviado para seu email."
+        );
+
         regForm.reset();
       } else {
         showToast(res.error);
@@ -331,10 +362,11 @@ function toggleProfileMenu() {
 }
 
 function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  // [MUDANÇA] Limpa cookies
+  clearSession();
   checkLoginState();
   toggleProfileMenu();
+  showToast("Você saiu da conta.");
 }
 
 // --- 2. LÓGICA DO CARRINHO ---
@@ -738,10 +770,24 @@ function initMobileMenu() {
 function initScrollEffects() {
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener("click", (e) => {
-      e.preventDefault();
-      document
-        .querySelector(a.getAttribute("href"))
-        ?.scrollIntoView({ behavior: "smooth" });
+      // 1. Pega o href dentro do clique
+      const href = a.getAttribute("href");
+
+      // 2. Se for apenas "#" (link vazio), ignora e previne o pulo de página
+      if (href === "#") {
+        e.preventDefault();
+        return;
+      }
+      try {
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: "smooth" });
+        }
+      } catch (error) {
+        // Se o seletor for inválido, ignora silenciosamente
+        console.warn("Link inválido para scroll:", href);
+      }
     });
   });
 }
@@ -896,6 +942,20 @@ function initContactForm() {
     if (!lojaAberta) {
       document.getElementById("modal-closed").style.display = "flex";
       return; // Para tudo, não envia nada
+    }
+
+    // ===> 2. [NOVO] BLOQUEIO DE LOGIN <===
+
+    const { token } = getSession();
+
+    if (!token) {
+      // Abre o modal de autenticação
+      // Supondo que você tem uma função para abrir o modal de login
+      // Se não tiver, chame document.getElementById('modal-auth').style.display = 'flex';
+      abrirModalLogin(
+        "Para finalizar o pedido, é necessário entrar ou cadastrar-se."
+      );
+      return;
     }
 
     // Identifica qual botão clicou (Sistema ou WhatsApp)
@@ -1080,7 +1140,7 @@ async function initHorarioFuncionamento() {
 // --- MINHA CONTA ---
 
 function openAccountModal() {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = getSession();
   if (!user.id) return showToast("Faça login novamente.");
 
   // Preenche o formulário com o que temos salvo
@@ -1129,10 +1189,8 @@ async function saveAccountDetails() {
   const res = await updateUserProfile(data);
 
   if (res.success) {
-    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const newUser = { ...currentUser, ...res.user };
-
-    localStorage.setItem("user", JSON.stringify(newUser));
+    const { token, user: oldUser } = getSession();
+    const newUser = { ...oldUser, ...res.user };
     checkLoginState();
 
     showToast("Dados atualizados com sucesso!");
@@ -1279,7 +1337,7 @@ let ordersInterval = null;
 // --- HISTÓRICO DE PEDIDOS ---
 
 async function abrirHistoricoPedidos() {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = getSession();
   if (!user.id) return showToast("Faça login para ver.", "warning");
 
   const modal = document.getElementById("modal-orders");
@@ -1514,7 +1572,7 @@ const COOLDOWN_CHAT = 2000;
 function toggleChat() {
   const widget = document.getElementById("chat-widget");
   const icon = document.getElementById("chat-icon");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = getSession();
 
   if (!user.id) return showToast("Faça login para usar o chat.");
 
@@ -1751,3 +1809,28 @@ function carregarCarrinhoLocal() {
     atualizarBotoesMenu();
   }
 }
+
+window.pedirMagicLink = pedirMagicLink;
+
+// Alterna entre "Magic Link" e "Senha" dentro da aba de Login
+function toggleLoginMode(mode) {
+  const magicForm = document.getElementById("form-magic-login");
+  const passForm = document.getElementById("form-password-login");
+
+  if (mode === "password") {
+    magicForm.style.display = "none";
+    passForm.style.display = "block";
+
+    // Auto-foco no campo de email se estiver vazio
+    const emailMagic = document.getElementById("magic-email").value;
+    const emailPass = document.getElementById("login-email");
+    if (emailMagic) emailPass.value = emailMagic; // Copia o email digitado
+  } else {
+    magicForm.style.display = "block";
+    passForm.style.display = "none";
+  }
+}
+
+// ...
+// Lembre de exportar a função para o HTML usar:
+window.toggleLoginMode = toggleLoginMode;

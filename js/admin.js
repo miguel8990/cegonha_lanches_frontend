@@ -25,7 +25,7 @@ import {
   fetchDashboardStats,
   fetchOrderDossier,
 } from "./api.js";
-
+import { getSession, clearSession } from "./auth.js";
 // --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
 let chatInterval = null;
@@ -37,7 +37,7 @@ let chartInstance = null;
 // --- 1. Inicialização ---
 document.addEventListener("DOMContentLoaded", () => {
   // Verifica se é admin
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = getSession();
   if (!user.role || (user.role !== "admin" && user.role !== "super_admin")) {
     alert("Acesso negado.");
     window.location.href = "index.html";
@@ -87,8 +87,7 @@ window.switchPanel = function (panelId) {
 
 window.adminLogout = function () {
   if (confirm("Tem certeza que deseja sair do Painel Administrativo?")) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearSession();
     window.location.href = "index.html";
   }
 };
@@ -101,7 +100,7 @@ window.adminLogout = function () {
 window.carregarCozinha = async function () {
   // Busca todos os pedidos
   const pedidos = await fetchAdminOrders();
-
+  pedidosDoDia = pedidos;
   // Filtra para as 3 colunas
   const espera = pedidos.filter((p) => p.status === "Recebido");
   const preparo = pedidos.filter((p) => p.status === "Em Preparo");
