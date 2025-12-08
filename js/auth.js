@@ -6,34 +6,21 @@ import { openAuthModal } from "./main.js";
 //  SISTEMA DE COOKIES (Sessão Robusta)
 // ==========================================
 
-// Arquivo: site/js/auth.js
-
 export function setCookie(name, value, days) {
   let expires = "";
-
-  // Define a data de validade do cookie
   if (days) {
     const date = new Date();
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     expires = "; expires=" + date.toUTCString();
   }
-
-  // --- AQUI ESTÁ A CORREÇÃO DE SEGURANÇA ---
-  // Verifica se o site está rodando com cadeado (HTTPS)
-  // Se sim, adiciona "; Secure", que protege o cookie
-  const isSecure = window.location.protocol === "https:";
-  const secureFlag = isSecure ? "; Secure" : "";
-
-  // Cria o cookie com as proteções:
-  // Path=/: Vale para o site todo
-  // SameSite=Strict: Protege contra sites falsos tentando usar seu login
+  // Secure: Só envia em HTTPS (ou localhost)
+  // SameSite=Strict: Protege contra CSRF
   document.cookie =
     name +
     "=" +
     (encodeURIComponent(value) || "") +
     expires +
-    "; path=/; SameSite=Strict" +
-    secureFlag;
+    "; path=/; SameSite=Strict"; // Adicione "Secure;" se estiver em produção com HTTPS
 }
 
 export function getCookie(name) {

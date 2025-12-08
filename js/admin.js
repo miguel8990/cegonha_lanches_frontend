@@ -50,41 +50,19 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarCozinha();
 
   // Inicia Polling (atualização automática)
-  const loopCozinha = async () => {
-    // Só atualiza se a aba "Cozinha" estiver aberta na tela
-    const painel = document.getElementById("panel-kitchen");
-    if (painel && painel.classList.contains("active")) {
-      try {
-        await carregarCozinha();
-      } catch (error) {
-        console.warn("Erro ao buscar pedidos, tentando de novo em breve...");
-      }
+  setInterval(() => {
+    // Só atualiza se a aba Cozinha estiver visível
+    if (document.getElementById("panel-kitchen").classList.contains("active")) {
+      carregarCozinha();
     }
-    // Agenda a próxima busca para daqui 10 segundos (só roda depois que a atual terminar)
-    setTimeout(loopCozinha, 10000);
-  };
-
-  // Dá o pontapé inicial
-  loopCozinha();
-
-  const loopChat = async () => {
-    const painel = document.getElementById("panel-chat");
-    if (painel && painel.classList.contains("active")) {
-      try {
-        await carregarListaConversas();
-        // Se tiver conversando com alguém, atualiza as mensagens dele também
-        if (chatUserIdAtivo) {
-          await carregarChatAtivo(chatUserIdAtivo);
-        }
-      } catch (error) {
-        console.warn("Erro no chat:", error);
-      }
+  }, 10000);
+  setInterval(() => {
+    // Chat atualiza apenas se a aba estiver aberta
+    if (document.getElementById("panel-chat").classList.contains("active")) {
+      carregarListaConversas();
+      if (chatUserIdAtivo) carregarChatAtivo(chatUserIdAtivo);
     }
-    // Agenda o próximo para 5 segundos
-    setTimeout(loopChat, 5000);
-  };
-
-  loopChat();
+  }, 5000);
 });
 
 // =============================================================================
