@@ -134,10 +134,6 @@ window.carregarCozinha = async function () {
   renderizarFila("queue-delivery", entrega, "entrega"); // [NOVO]
 };
 
-// site/js/admin.js
-
-// site/js/admin.js
-
 function renderizarFila(elementId, lista, tipo) {
   const container = document.getElementById(elementId);
 
@@ -148,105 +144,63 @@ function renderizarFila(elementId, lista, tipo) {
 
   container.innerHTML = lista
     .map((p) => {
-      // 1. Formatação de Hora e Valores
       const hora = new Date(p.date_created).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       });
-      const totalFormatado = parseFloat(p.total_price)
-        .toFixed(2)
-        .replace(".", ",");
       const classeAlerta = tipo === "espera" ? "card-alert" : "";
 
-      // 2. Botões de Ação (Mantidos igual)
+      // Botões de Ação Dinâmicos
       let btnAcao = "";
+
       if (tipo === "espera") {
+        // Botão ACEITAR -> Vai para Preparo
         btnAcao = `<button class="btn-primary full-width" onclick="moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
       } else if (tipo === "preparo") {
+        // Botão ENTREGA -> Vai para Entrega
         btnAcao = `<button class="btn-primary full-width" style="background:#3498db; border-color:#3498db;" onclick="moverParaEntrega(${p.id})">SAIR P/ ENTREGA <i class="fa-solid fa-motorcycle"></i></button>`;
       } else if (tipo === "entrega") {
+        // [NOVO] Botão CONCLUIR -> Finaliza e remove da tela
         btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
       }
 
-      // 3. Renderização COMPLETA dos Itens (Correção Principal)
+      // Renderiza itens (comprimido para ocupar menos espaço)
       const itensHtml = p.items
         .map((i) => {
-          let detalhesHtml = "";
-
+          let obsHtml = "";
           if (i.customizations_json) {
             try {
               const c = JSON.parse(i.customizations_json);
-
-              // Agrupa tudo que é extra em uma lista única
-              const extras = [
-                ...(c.carnes || []),
-                ...(c.adicionais || []),
-                ...(c.acompanhamentos || []),
-                ...(c.bebidas || []),
-              ];
-
-              // Se tiver extras, adiciona linha visual
-              if (extras.length > 0) {
-                detalhesHtml += `<div style="font-size:0.85rem; color:#aaa; margin-left:10px; margin-top:2px;">+ ${extras.join(
-                  ", "
-                )}</div>`;
-              }
-
-              // Observação ganha destaque
-              if (c.obs) {
-                detalhesHtml += `<div class="k-obs" style="font-size:0.85rem; color:#f1c40f; margin-left:10px; margin-top:2px;">⚠️ ${c.obs}</div>`;
-              }
-            } catch (e) {
-              console.error("Erro ao ler detalhes", e);
-            }
+              if (c.obs)
+                obsHtml = `<div class="k-obs" style="display:inline; margin-left:5px;">⚠️ ${c.obs}</div>`;
+            } catch (e) {}
           }
-
-          // Retorna o item formatado
-          return `
-            <div class="k-item" style="border-bottom:1px solid #333; padding:8px 0;">
-                <div style="font-size:1rem;"><strong>${i.quantity}x ${i.product.name}</strong></div>
-                ${detalhesHtml}
-            </div>`;
+          return `<div class="k-item"><strong>${i.quantity}x ${i.product.name}</strong>${obsHtml}</div>`;
         })
         .join("");
 
-      // 4. Montagem do Endereço e Pagamento
-      const enderecoHtml = p.street
-        ? `📍 ${p.street}, ${p.number} - ${p.neighborhood} ${
-            p.complement ? `(${p.complement})` : ""
-          }`
-        : `🏃 Retirada no Local`;
-
-      const pagamentoHtml =
-        p.payment_method === "cash" ? "Dinheiro" : p.payment_method;
-
-      // 5. Retorno do Cartão Completo
       return `
-            <div class="kitchen-card ${classeAlerta}" style="display:flex; flex-direction:column; gap:10px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #444; padding-bottom:5px;">
+            <div class="kitchen-card ${classeAlerta}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:5px;">
                     <span style="font-size:1rem; font-weight:bold;">#${
                       p.id
                     } - ${p.customer_name.split(" ")[0]}</span>
                     <span style="color:#aaa; font-size:0.9rem;">${hora}</span>
                 </div>
                 
-                <div>${itensHtml}</div> 
+                <div style="margin-bottom:10px; max-height:150px; overflow-y:auto;">${itensHtml}</div>
                 
-                <div style="background:#222; padding:8px; border-radius:5px; font-size:0.85rem; color:#ccc; margin-top:auto;">
-                    <div style="margin-bottom:5px;">${enderecoHtml}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #444; padding-top:5px;">
-                        <span>💳 ${pagamentoHtml}</span>
-                        <span style="color:var(--color-gold); font-size:1rem; font-weight:bold;">R$ ${totalFormatado}</span>
-                    </div>
-                </div>
+                ${
+                  tipo === "entrega"
+                    ? `<div style="font-size:0.8rem; color:#ccc; margin-bottom:10px; background:#222; padding:5px; border-radius:4px;">📍 ${p.neighborhood}</div>`
+                    : ""
+                }
 
-                <div style="display:flex; gap:5px; margin-top:5px;">
+                <div style="display:flex; gap:5px;">
                     ${btnAcao}
                     <button class="btn-small btn-cancel" onclick="imprimirComanda(${
                       p.id
-                    })" title="Imprimir" style="padding: 0 15px;">
-                        <i class="fa-solid fa-print"></i>
-                    </button>
+                    })" title="Imprimir"><i class="fa-solid fa-print"></i></button>
                 </div>
             </div>
         `;

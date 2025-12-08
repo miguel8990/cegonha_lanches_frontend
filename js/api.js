@@ -2,7 +2,16 @@
 
 import { getToken } from "./auth.js";
 
-const API_BASE_URL = "http://localhost:5000/api";
+// [CORREÇÃO 1] Configuração Dinâmica de Ambiente
+// Detecta se o site está rodando localmente ou em produção
+const isLocalhost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
+// Se for localhost, usa a porta 5000. Se for produção (Vercel/Render), usa a URL do seu backend online.
+const API_BASE_URL = isLocalhost
+  ? "http://localhost:5000/api"
+  : "https://seu-backend-no-render.com/api";
 
 // --- HELPERS ---
 function getAuthHeader() {
@@ -27,7 +36,11 @@ function adaptarProduto(produtoBack) {
     id: produtoBack.id,
     name: produtoBack.name,
     description: produtoBack.description,
-    price: produtoBack.price,
+
+    // AQUI ESTÁ A CORREÇÃO MÁGICA:
+    // Convertemos o preço (que vem como String do banco Numeric) para Float
+    price: parseFloat(produtoBack.price),
+
     image: produtoBack.image_url || "assets/burger_classic.png",
     carnes: detalhes.carnes || [],
     adicionais: detalhes.adicionais || [],
