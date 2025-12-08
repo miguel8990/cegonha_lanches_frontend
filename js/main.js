@@ -397,7 +397,7 @@ function atualizarCarrinhoUI() {
   const container = document.getElementById("cart-items");
   const contador = document.getElementById("cart-count");
   const totalSpan = document.getElementById("cart-total-price");
-
+  if (!container) return;
   container.innerHTML = "";
   let total = 0;
   let totalItens = 0;
@@ -882,35 +882,37 @@ function initContactForm() {
   const retiradaCheck = document.getElementById("retirada-check");
   const addressSection = document.querySelector(".address-section");
 
+  const toggleAddress = () => {
+    if (!retiradaCheck || !addressSection) return;
+    const bairroSelect = document.getElementById("bairro"); // Pega o select
+
+    if (retiradaCheck.checked) {
+      addressSection.style.display = "none"; // Esconde endereço
+
+      // Remove obrigatoriedade dos inputs escondidos
+      addressSection
+        .querySelectorAll("input")
+        .forEach((i) => i.removeAttribute("required"));
+
+      // [CORREÇÃO] Remove obrigatoriedade do Select de Bairro
+      if (bairroSelect) bairroSelect.removeAttribute("required");
+    } else {
+      addressSection.style.display = "block"; // Mostra endereço
+
+      // Devolve a obrigatoriedade dos inputs
+      addressSection.querySelectorAll("input").forEach((i) => {
+        if (i.name !== "comp") i.setAttribute("required", "true");
+      });
+
+      // [CORREÇÃO] Devolve obrigatoriedade do Bairro
+      if (bairroSelect) bairroSelect.setAttribute("required", "true");
+    }
+  };
+
   // 1. LÓGICA DA RETIRADA (Corrigida)
   if (retiradaCheck && addressSection) {
     // Função interna para alternar visibilidade
     // Função interna para alternar visibilidade
-    const toggleAddress = () => {
-      const bairroSelect = document.getElementById("bairro"); // Pega o select
-
-      if (retiradaCheck.checked) {
-        addressSection.style.display = "none"; // Esconde endereço
-
-        // Remove obrigatoriedade dos inputs escondidos
-        addressSection
-          .querySelectorAll("input")
-          .forEach((i) => i.removeAttribute("required"));
-
-        // [CORREÇÃO] Remove obrigatoriedade do Select de Bairro
-        if (bairroSelect) bairroSelect.removeAttribute("required");
-      } else {
-        addressSection.style.display = "block"; // Mostra endereço
-
-        // Devolve a obrigatoriedade dos inputs
-        addressSection.querySelectorAll("input").forEach((i) => {
-          if (i.name !== "comp") i.setAttribute("required", "true");
-        });
-
-        // [CORREÇÃO] Devolve obrigatoriedade do Bairro
-        if (bairroSelect) bairroSelect.setAttribute("required", "true");
-      }
-    };
 
     // Ouve o clique
     retiradaCheck.addEventListener("change", toggleAddress);

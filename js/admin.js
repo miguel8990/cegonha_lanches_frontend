@@ -26,6 +26,7 @@ import {
   fetchOrderDossier,
 } from "./api.js";
 import { getSession, clearSession } from "./auth.js";
+
 // --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
 let chatInterval = null;
@@ -52,13 +53,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Inicia Polling (atualização automática)
   setInterval(() => {
     // Só atualiza se a aba Cozinha estiver visível
-    if (document.getElementById("panel-kitchen").classList.contains("active")) {
+    const panelKitchen = document.getElementById("panel-kitchen");
+    if (panelKitchen && panelKitchen.classList.contains("active")) {
       carregarCozinha();
     }
   }, 10000);
+
   setInterval(() => {
     // Chat atualiza apenas se a aba estiver aberta
-    if (document.getElementById("panel-chat").classList.contains("active")) {
+    const panelChat = document.getElementById("panel-chat");
+    if (panelChat && panelChat.classList.contains("active")) {
       carregarListaConversas();
       if (chatUserIdAtivo) carregarChatAtivo(chatUserIdAtivo);
     }
@@ -74,15 +78,22 @@ window.switchPanel = function (panelId) {
   document
     .querySelectorAll(".panel-section")
     .forEach((el) => el.classList.remove("active"));
+
   // Mostra a desejada
-  document.getElementById(`panel-${panelId}`).classList.add("active");
+  const target = document.getElementById(`panel-${panelId}`);
+  if (target) target.classList.add("active");
+
   if (panelId === "kitchen") carregarCozinha();
   if (panelId === "delivery") carregarBairrosAdmin();
+
   // Atualiza menu lateral
   document
     .querySelectorAll(".sidebar-menu button")
     .forEach((btn) => btn.classList.remove("active"));
-  event.currentTarget.classList.add("active");
+
+  if (event && event.currentTarget) {
+    event.currentTarget.classList.add("active");
+  }
 };
 
 window.adminLogout = function () {
@@ -100,20 +111,22 @@ window.adminLogout = function () {
 window.carregarCozinha = async function () {
   // Busca todos os pedidos
   const pedidos = await fetchAdminOrders();
-  pedidosDoDia = pedidos;
+  pedidosDoDia = pedidos; // Atualiza cache global
+
   // Filtra para as 3 colunas
   const espera = pedidos.filter((p) => p.status === "Recebido");
   const preparo = pedidos.filter((p) => p.status === "Em Preparo");
-  const entrega = pedidos.filter((p) => p.status === "Saiu para Entrega"); // [NOVO]
+  const entrega = pedidos.filter((p) => p.status === "Saiu para Entrega");
 
   // Renderiza
   renderizarFila("queue-waiting", espera, "espera");
   renderizarFila("queue-prep", preparo, "preparo");
-  renderizarFila("queue-delivery", entrega, "entrega"); // [NOVO]
+  renderizarFila("queue-delivery", entrega, "entrega");
 };
 
 function renderizarFila(elementId, lista, tipo) {
   const container = document.getElementById(elementId);
+  if (!container) return;
 
   if (lista.length === 0) {
     container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px; font-size:0.9rem;">Vazio</p>`;
@@ -126,59 +139,97 @@ function renderizarFila(elementId, lista, tipo) {
         hour: "2-digit",
         minute: "2-digit",
       });
+
+      // [FIX] Converte totais para float para evitar erro ao renderizar na cozinha (se necessário)
+      const totalFormatado = parseFloat(p.total_price || 0)
+        .toFixed(2)
+        .replace(".", ",");
+
       const classeAlerta = tipo === "espera" ? "card-alert" : "";
 
       // Botões de Ação Dinâmicos
       let btnAcao = "";
 
       if (tipo === "espera") {
-        // Botão ACEITAR -> Vai para Preparo
         btnAcao = `<button class="btn-primary full-width" onclick="moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
       } else if (tipo === "preparo") {
-        // Botão ENTREGA -> Vai para Entrega
         btnAcao = `<button class="btn-primary full-width" style="background:#3498db; border-color:#3498db;" onclick="moverParaEntrega(${p.id})">SAIR P/ ENTREGA <i class="fa-solid fa-motorcycle"></i></button>`;
       } else if (tipo === "entrega") {
-        // [NOVO] Botão CONCLUIR -> Finaliza e remove da tela
         btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
       }
 
-      // Renderiza itens (comprimido para ocupar menos espaço)
+      // Renderização COMPLETA dos Itens (Com correção de altura)
       const itensHtml = p.items
         .map((i) => {
-          let obsHtml = "";
+          let detalhesHtml = "";
+
           if (i.customizations_json) {
             try {
               const c = JSON.parse(i.customizations_json);
-              if (c.obs)
-                obsHtml = `<div class="k-obs" style="display:inline; margin-left:5px;">⚠️ ${c.obs}</div>`;
+
+              const extras = [
+                ...(c.carnes || []),
+                ...(c.adicionais || []),
+                ...(c.acompanhamentos || []),
+                ...(c.bebidas || []),
+              ];
+
+              if (extras.length > 0) {
+                detalhesHtml += `<div style="font-size:0.85rem; color:#aaa; margin-left:10px; margin-top:2px;">+ ${extras.join(
+                  ", "
+                )}</div>`;
+              }
+
+              if (c.obs) {
+                detalhesHtml += `<div class="k-obs" style="font-size:0.85rem; color:#f1c40f; margin-left:10px; margin-top:2px;">⚠️ ${c.obs}</div>`;
+              }
             } catch (e) {}
           }
-          return `<div class="k-item"><strong>${i.quantity}x ${i.product.name}</strong>${obsHtml}</div>`;
+
+          return `
+            <div class="k-item" style="border-bottom:1px solid #333; padding:8px 0;">
+                <div style="font-size:1rem;"><strong>${i.quantity}x ${i.product.name}</strong></div>
+                ${detalhesHtml}
+            </div>`;
         })
         .join("");
 
+      // Endereço e Pagamento
+      const enderecoHtml = p.street
+        ? `📍 ${p.street}, ${p.number} - ${p.neighborhood} ${
+            p.complement ? `(${p.complement})` : ""
+          }`
+        : `🏃 Retirada no Local`;
+
+      const pagamentoHtml =
+        p.payment_method === "cash" ? "Dinheiro" : p.payment_method;
+
       return `
-            <div class="kitchen-card ${classeAlerta}">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:5px;">
+            <div class="kitchen-card ${classeAlerta}" style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #444; padding-bottom:5px;">
                     <span style="font-size:1rem; font-weight:bold;">#${
                       p.id
                     } - ${p.customer_name.split(" ")[0]}</span>
                     <span style="color:#aaa; font-size:0.9rem;">${hora}</span>
                 </div>
                 
-                <div style="margin-bottom:10px; max-height:150px; overflow-y:auto;">${itensHtml}</div>
+                <div>${itensHtml}</div> 
                 
-                ${
-                  tipo === "entrega"
-                    ? `<div style="font-size:0.8rem; color:#ccc; margin-bottom:10px; background:#222; padding:5px; border-radius:4px;">📍 ${p.neighborhood}</div>`
-                    : ""
-                }
+                <div style="background:#222; padding:8px; border-radius:5px; font-size:0.85rem; color:#ccc; margin-top:auto;">
+                    <div style="margin-bottom:5px;">${enderecoHtml}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #444; padding-top:5px;">
+                        <span>💳 ${pagamentoHtml}</span>
+                        <span style="color:var(--color-gold); font-size:1rem; font-weight:bold;">R$ ${totalFormatado}</span>
+                    </div>
+                </div>
 
-                <div style="display:flex; gap:5px;">
+                <div style="display:flex; gap:5px; margin-top:5px;">
                     ${btnAcao}
                     <button class="btn-small btn-cancel" onclick="imprimirComanda(${
                       p.id
-                    })" title="Imprimir"><i class="fa-solid fa-print"></i></button>
+                    })" title="Imprimir" style="padding: 0 15px;">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -194,7 +245,6 @@ window.moverParaPreparo = async function (id) {
 };
 
 window.moverParaEntrega = async function (id) {
-  // Não pede confirmação para ser rápido
   await updateOrderStatus(id, "Saiu para Entrega");
   carregarCozinha();
 };
@@ -202,25 +252,30 @@ window.moverParaEntrega = async function (id) {
 window.concluirPedidoDefinitivo = async function (id) {
   if (confirm("Confirmar que o pedido foi entregue e pago?")) {
     await updateOrderStatus(id, "Concluído");
-    carregarCozinha(); // O pedido sairá da coluna 'Em Entrega' e irá para o Histórico
+    carregarCozinha();
   }
 };
-window.carregarPedidosAdmin = async function () {
+
+window.carregarPedidosAdmin = async function (filtrosOpcionais = null) {
   const container = document.getElementById("admin-orders-list");
   const btn = document.querySelector("#panel-orders .btn-outline");
 
-  // Feedback visual
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> ...';
 
-  // Busca da API
-  const pedidos = await fetchAdminOrders();
+  let filtrosFinais = filtrosOpcionais;
+  if (!filtrosFinais) {
+    const hoje = new Date().toISOString().split("T")[0];
+    filtrosFinais = { start_date: hoje, end_date: hoje };
+  }
 
-  // [NOVO] Salva na memória global para a impressão usar
+  const pedidos = await fetchAdminOrders(filtrosFinais);
   pedidosDoDia = pedidos;
+
+  if (!container) return;
 
   container.innerHTML = pedidos.length
     ? pedidos.map((p) => renderOrderCard(p)).join("")
-    : "<p>Nenhum pedido hoje.</p>";
+    : '<div style="text-align:center; padding:20px; color:#666; grid-column: 1 / -1;">Nenhum pedido encontrado com estes filtros.</div>';
 
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
 };
@@ -231,13 +286,10 @@ function renderOrderCard(p) {
     minute: "2-digit",
   });
 
-  // Botões de Status
   let botoes = "";
-
   if (p.status !== "Concluído" && p.status !== "Cancelado")
     botoes += ` <button class="btn-small btn-cancel" onclick="mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
 
-  // [NOVO] Botão de Imprimir (Sempre visível)
   const btnPrint = `
     <button class="btn-small" onclick="imprimirComanda(${p.id})" style="background:#555; color:white; border:none; margin-right:5px;" title="Imprimir Cupom">
         <i class="fa-solid fa-print"></i>
@@ -250,10 +302,13 @@ function renderOrderCard(p) {
     </button>
   `;
 
-  // Itens
   const itemsHtml = p.items
     .map((i) => `<div><strong>${i.quantity}x ${i.product.name}</strong></div>`)
     .join("");
+
+  // [FIX] Correção Crítica: Converter String para Float antes de formatar
+  const totalNum = parseFloat(p.total_price || 0);
+  const totalFormatado = totalNum.toFixed(2).replace(".", ",");
 
   return `
     <div class="admin-order-card status-${p.status.replace(/ /g, ".")}">
@@ -267,7 +322,7 @@ function renderOrderCard(p) {
         <div style="font-size:0.85rem; margin:10px 0;">
             📍 ${p.street}, ${p.number}<br>
             💳 <strong>${p.payment_method}</strong><br>
-            <span style="color:gold">R$ ${p.total_price.toFixed(2)}</span>
+            <span style="color:gold">R$ ${totalFormatado}</span>
         </div>
         <div class="card-actions">
             ${btnPrint}
@@ -293,6 +348,8 @@ window.mudarStatus = async function (id, novo) {
 
 window.carregarMenuAdmin = async function () {
   const tbody = document.getElementById("admin-menu-list");
+  if (!tbody) return;
+
   const produtos = await fetchAdminMenu();
 
   if (produtos.length === 0) {
@@ -301,11 +358,14 @@ window.carregarMenuAdmin = async function () {
   }
 
   tbody.innerHTML = produtos
-    .map(
-      (p) => `
+    .map((p) => {
+      // [FIX] Conversão de segurança para o preço
+      const precoNum = parseFloat(p.price || 0);
+
+      return `
         <tr>
             <td>${p.name}</td>
-            <td>R$ ${p.price.toFixed(2)}</td>
+            <td>R$ ${precoNum.toFixed(2).replace(".", ",")}</td>
             <td style="text-align:center;">
                 <i class="toggle-switch fa-solid ${
                   p.is_available ? "fa-toggle-on on" : "fa-toggle-off off"
@@ -327,8 +387,8 @@ window.carregarMenuAdmin = async function () {
                 </div>
             </td>
         </tr>
-    `
-    )
+    `;
+    })
     .join("");
 };
 
@@ -337,29 +397,27 @@ window.toggleProd = async function (id) {
   carregarMenuAdmin();
 };
 
-// --- MODAL DE PRODUTO (Criar e Editar) ---
+// --- MODAL DE PRODUTO ---
 
 window.openProductModal = function () {
-  produtoEmEdicaoId = null; // Modo Criar
-
-  // Limpa formulário e visual
+  produtoEmEdicaoId = null;
   document.getElementById("form-add-product").reset();
   document.querySelector("#modal-product-admin h3").innerText = "Novo Produto";
   document.querySelector('#form-add-product button[type="submit"]').innerText =
     "Cadastrar Produto";
 
-  // Imagem
   document.getElementById("preview-img").style.display = "none";
   document.getElementById("preview-icon").style.display = "block";
   document.getElementById("prod-image-url").value = "";
-  const lbl = document.querySelector('label[for="prod-file"]');
+
+  const lbl = document.getElementById("btn-upload-pc");
   if (lbl) {
-    lbl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload PC';
+    lbl.innerHTML =
+      '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload PC</span>';
     lbl.style.color = "";
     lbl.style.borderColor = "";
   }
 
-  // Detalhes (Linhas vazias)
   document.getElementById("details-container").innerHTML = "";
   window.addDetailRow();
   window.addDetailRow();
@@ -368,21 +426,19 @@ window.openProductModal = function () {
 };
 
 window.editarProduto = async function (id) {
-  // Busca dados atualizados do menu
   const produtos = await fetchAdminMenu();
   const produto = produtos.find((p) => p.id === id);
   if (!produto) return;
 
-  produtoEmEdicaoId = id; // Modo Editar
+  produtoEmEdicaoId = id;
 
-  // Preenche formulário
   document.querySelector("#modal-product-admin h3").innerText =
     "Editar Produto";
   document.querySelector('#form-add-product button[type="submit"]').innerText =
     "Salvar Alterações";
 
   document.getElementById("prod-name").value = produto.name;
-  document.getElementById("prod-price").value = produto.price;
+  document.getElementById("prod-price").value = parseFloat(produto.price || 0); // Ajuste
   document.getElementById("prod-category").value = produto.category || "Lanche";
   document.getElementById("prod-desc").value = produto.description || "";
   document.getElementById("prod-image-url").value = produto.image_url || "";
@@ -394,10 +450,6 @@ window.editarProduto = async function (id) {
         : "";
   }
 
-  if (document.getElementById("prod-stock"))
-    document.getElementById("prod-stock").value = "";
-
-  // Preview Imagem
   if (produto.image_url) {
     const img = document.getElementById("preview-img");
     img.src = produto.image_url;
@@ -405,13 +457,11 @@ window.editarProduto = async function (id) {
     document.getElementById("preview-icon").style.display = "none";
   }
 
-  // Preenche Detalhes
   const container = document.getElementById("details-container");
   container.innerHTML = "";
 
   let details = {};
   try {
-    // Tenta ler do objeto ou parsear string (compatibilidade)
     details =
       typeof produto.details_json === "string"
         ? JSON.parse(produto.details_json)
@@ -422,15 +472,16 @@ window.editarProduto = async function (id) {
   ["carnes", "adicionais", "acompanhamentos", "bebidas"].forEach((key) => {
     if (details[key]) {
       details[key].forEach((item) => {
-        // Formata "Bacon - 3.00"
-        const val = item.price > 0 ? `${item.nome} - ${item.price}` : item.nome;
+        // [FIX] Garante que item.price seja numérico para exibir
+        const priceNum = parseFloat(item.price || 0);
+        const val = priceNum > 0 ? `${item.nome} - ${priceNum}` : item.nome;
         window.addDetailRow(key, val);
         temDetalhes = true;
       });
     }
   });
 
-  if (!temDetalhes) window.addDetailRow(); // Garante pelo menos uma linha
+  if (!temDetalhes) window.addDetailRow();
 
   document.getElementById("modal-product-admin").style.display = "flex";
 };
@@ -439,7 +490,6 @@ window.closeProductModal = function () {
   document.getElementById("modal-product-admin").style.display = "none";
 };
 
-// Adiciona linha dinâmica no modal
 window.addDetailRow = function (key = "adicionais", value = "") {
   const container = document.getElementById("details-container");
   const div = document.createElement("div");
@@ -471,39 +521,26 @@ window.removeDetailRow = function (btn) {
   btn.parentElement.remove();
 };
 
-// Upload de Imagem (Listener)
-// Upload de Imagem (Listener)
 const fileInput = document.getElementById("prod-file");
-
 if (fileInput) {
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Elementos visuais
-    const lbl = document.getElementById("btn-upload-pc"); // O botão que criamos
+    const lbl = document.getElementById("btn-upload-pc");
     const textoOriginal =
       '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload PC</span>';
 
-    // 1. Estado Inicial: Verificando Duplicatas
     lbl.innerHTML =
       '<i class="fa-solid fa-magnifying-glass fa-spin"></i> Verificando...';
     lbl.style.pointerEvents = "none";
     lbl.style.opacity = "0.7";
 
     try {
-      // --- NOVO: VERIFICAÇÃO DE DUPLICIDADE ---
-      // 1. Busca a lista atual da nuvem
       const galeria = await fetchCloudGallery();
-
-      // 2. Extrai o nome do arquivo sem extensão (ex: "burger.jpg" -> "burger")
-      // O Cloudinary usa o "public_id" que geralmente é o nome do arquivo sem extensão
       const nomeArquivo = file.name.split(".")[0].toLowerCase();
-
-      // 3. Verifica se existe alguma imagem na galeria que termine com esse nome
-      // (O public_id pode ser "cegonha_cardapio/burger", então checamos o final)
       const duplicada = galeria.find((img) => {
-        const nomeNaNuvem = img.name.split("/").pop().toLowerCase(); // Pega só o final
+        const nomeNaNuvem = img.name.split("/").pop().toLowerCase();
         return nomeNaNuvem === nomeArquivo;
       });
 
@@ -511,13 +548,11 @@ if (fileInput) {
         alert(
           `Atenção: A imagem "${file.name}" já existe na nuvem!\n\nPara usar esta imagem, clique no botão "Nuvem" e selecione-a na galeria.`
         );
-        throw new Error("Imagem duplicada"); // Força a saída para o catch
+        throw new Error("Imagem duplicada");
       }
 
-      // --- SE PASSOU, CONTINUA PRO UPLOAD ---
       lbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
 
-      // Preview Local (para não deixar o usuário esperando o upload terminar para ver)
       const reader = new FileReader();
       reader.onload = (ev) => {
         const img = document.getElementById("preview-img");
@@ -529,21 +564,15 @@ if (fileInput) {
       };
       reader.readAsDataURL(file);
 
-      // Envio Real
       const url = await uploadImage(file);
 
       if (url) {
-        // SUCESSO
         document.getElementById("prod-image-url").value = url;
-
-        // Alert pedido
         alert("Imagem enviada para a nuvem com sucesso!");
-
         lbl.innerHTML = "Foto OK ✅";
         lbl.style.color = "#2ecc71";
         lbl.style.borderColor = "#2ecc71";
 
-        // Reseta visual após 3s
         setTimeout(() => {
           lbl.innerHTML = textoOriginal;
           lbl.style.color = "";
@@ -555,31 +584,20 @@ if (fileInput) {
         throw new Error("Falha no envio");
       }
     } catch (error) {
-      // TRATAMENTO DE ERRO OU DUPLICIDADE
       console.warn(error.message);
+      if (error.message !== "Imagem duplicada") alert("Erro: " + error.message);
 
-      // Se não for erro de duplicada (que já deu alert), avisa
-      if (error.message !== "Imagem duplicada") {
-        alert("Erro: " + error.message);
-      }
-
-      // Reseta o botão imediatamente
       lbl.innerHTML = textoOriginal;
       lbl.style.pointerEvents = "auto";
       lbl.style.opacity = "1";
-
-      // Limpa o preview se deu erro
       document.getElementById("preview-img").style.display = "none";
       document.getElementById("preview-icon").style.display = "block";
       document.getElementById("prod-image-url").value = "";
     }
-
-    // Limpa o input para permitir nova tentativa
     fileInput.value = "";
   });
 }
 
-// Salvar Produto (Submit)
 const formProd = document.getElementById("form-add-product");
 if (formProd) {
   formProd.addEventListener("submit", async (e) => {
@@ -590,7 +608,6 @@ if (formProd) {
     const stockVal = document.getElementById("prod-stock").value;
 
     try {
-      // Coleta dados simples
       const data = {
         name: document.getElementById("prod-name").value,
         price: parseFloat(document.getElementById("prod-price").value),
@@ -606,7 +623,6 @@ if (formProd) {
         },
       };
 
-      // Processa as linhas de detalhes
       document.querySelectorAll("#details-container > div").forEach((row) => {
         const key = row.querySelector(".detail-key").value;
         const val = row.querySelector(".detail-val").value.trim();
@@ -616,14 +632,12 @@ if (formProd) {
           if (val.includes("-")) {
             const partes = val.split("-");
             nomeItem = partes[0].trim();
-            // Converte "3,50" para 3.50
             precoItem = parseFloat(partes[1].replace(",", ".").trim()) || 0;
           }
           data.details[key].push({ nome: nomeItem, price: precoItem });
         }
       });
 
-      // Envia
       let ok = false;
       if (produtoEmEdicaoId) {
         ok = await updateProduct(produtoEmEdicaoId, data);
@@ -649,7 +663,7 @@ if (formProd) {
   });
 }
 
-// --- SEGURANÇA: EXCLUIR PRODUTO ---
+// --- SEGURANÇA ---
 
 window.deletarProduto = function (id) {
   idParaDeletar = id;
@@ -692,7 +706,6 @@ window.executarDelecao = async function () {
   btn.disabled = false;
 };
 
-// Atalho Enter no modal de senha
 document.getElementById("security-pass")?.addEventListener("keypress", (e) => {
   if (e.key === "Enter") window.executarDelecao();
 });
@@ -704,6 +717,7 @@ document.getElementById("security-pass")?.addEventListener("keypress", (e) => {
 window.carregarListaConversas = async function () {
   const lista = await fetchAdminConversations();
   const container = document.getElementById("chat-users-list");
+  if (!container) return;
 
   if (lista.length === 0) {
     container.innerHTML =
@@ -733,14 +747,16 @@ window.carregarListaConversas = async function () {
 
 window.selecionarChat = function (id, nome) {
   chatUserIdAtivo = id;
-  document.getElementById("admin-chat-input-area").style.display = "flex";
+  const inputArea = document.getElementById("admin-chat-input-area");
+  if (inputArea) inputArea.style.display = "flex";
   carregarChatAtivo(id);
-  carregarListaConversas(); // Atualiza destaque
+  carregarListaConversas();
 };
 
 async function carregarChatAtivo(uid) {
   const msgs = await fetchAdminUserHistory(uid);
   const container = document.getElementById("admin-chat-messages");
+  if (!container) return;
 
   container.innerHTML = msgs
     .map(
@@ -751,7 +767,6 @@ async function carregarChatAtivo(uid) {
     )
     .join("");
 
-  // Rola para o final
   container.scrollTop = container.scrollHeight;
 }
 
@@ -774,28 +789,31 @@ window.handleAdminChatKey = function (e) {
 };
 
 // =============================================================================
-//  ABA 4: CONFIGURAÇÕES (Cupons e Usuários)
+//  ABA 4: CONFIGURAÇÕES
 // =============================================================================
 
 window.switchConfigTab = function (tabName) {
   document
     .querySelectorAll(".config-tab-btn")
     .forEach((btn) => btn.classList.remove("active"));
-  event.currentTarget.classList.add("active");
+
+  if (event && event.currentTarget) event.currentTarget.classList.add("active");
 
   document
     .querySelectorAll(".config-subpanel")
     .forEach((el) => (el.style.display = "none"));
-  document.getElementById(`config-${tabName}`).style.display = "block";
+
+  const target = document.getElementById(`config-${tabName}`);
+  if (target) target.style.display = "block";
 
   if (tabName === "coupons") carregarCuponsAdmin();
   if (tabName === "users") carregarUsuariosAdmin();
   if (tabName === "schedule") carregarHorariosAdmin();
 };
 
-// Cupons
 window.carregarCuponsAdmin = async function () {
   const container = document.getElementById("coupons-list");
+  if (!container) return;
   const lista = await fetchCoupons();
 
   if (lista.length === 0) {
@@ -812,10 +830,12 @@ window.carregarCuponsAdmin = async function () {
                 ${
                   c.discount_percent > 0
                     ? c.discount_percent + "% OFF"
-                    : "R$ " + c.discount_fixed.toFixed(2) + " OFF"
+                    : "R$ " + parseFloat(c.discount_fixed).toFixed(2) + " OFF"
                 }
             </div>
-            <div class="coupon-info">Min: R$ ${c.min_purchase.toFixed(2)}</div>
+            <div class="coupon-info">Min: R$ ${parseFloat(
+              c.min_purchase
+            ).toFixed(2)}</div>
             <div class="coupon-info">Usos: ${c.used_count} / ${
         c.usage_limit || "∞"
       }</div>
@@ -834,7 +854,8 @@ window.carregarCuponsAdmin = async function () {
 
 window.toggleNewCouponForm = function () {
   const form = document.getElementById("form-new-coupon");
-  form.style.display = form.style.display === "none" ? "block" : "none";
+  if (form)
+    form.style.display = form.style.display === "none" ? "block" : "none";
 };
 
 window.deletarCupom = async function (id) {
@@ -870,9 +891,9 @@ if (formCupom) {
   });
 }
 
-// Usuários
 window.carregarUsuariosAdmin = async function () {
   const tbody = document.getElementById("users-list-body");
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
 
   const lista = await fetchUsersList();
@@ -898,55 +919,48 @@ window.carregarUsuariosAdmin = async function () {
     )
     .join("");
 };
-// site/js/admin.js (Substitua o final do arquivo por isto)
 
 // =============================================================================
-//  SISTEMA DE GALERIA CLOUDINARY (UNIFICADO)
+//  SISTEMA DE GALERIA CLOUDINARY
 // =============================================================================
 
-// 1. Função Principal: Abre o Modal E Carrega a Lista
 window.abrirGaleriaNuvem = async function () {
   const modal = document.getElementById("modal-cloud-gallery");
   const container = document.getElementById("cloud-grid");
 
-  // Ação 1: Mostrar o Modal
   modal.style.display = "flex";
-
-  // Ação 2: Feedback de Carregamento
   container.innerHTML =
     '<p style="color:#ccc"><i class="fa-solid fa-spinner fa-spin"></i> Carregando nuvem...</p>';
 
-  // Ação 3: Buscar dados da API
-  const imagens = await fetchCloudGallery();
+  try {
+    const imagens = await fetchCloudGallery();
 
-  // Ação 4: Renderizar
-  if (imagens.length === 0) {
+    if (imagens.length === 0) {
+      container.innerHTML =
+        '<p style="color:#ccc">Nenhuma imagem encontrada na nuvem.</p>';
+      return;
+    }
+
+    container.innerHTML = imagens
+      .map((img) => {
+        const nomeExibicao = img.name.split("/").pop();
+        return `
+            <div class="gallery-item" onclick="selecionarImagemCloud('${img.url}')" title="${img.name}">
+                <button class="btn-delete-img" 
+                        onclick="apagarImagemCloud(event, '${img.name}')" 
+                        title="Apagar permanentemente">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+                <img src="${img.url}" loading="lazy">
+                <div class="gallery-name">${nomeExibicao}</div>
+            </div>
+        `;
+      })
+      .join("");
+  } catch (e) {
     container.innerHTML =
-      '<p style="color:#ccc">Nenhuma imagem encontrada na nuvem.</p>';
-    return;
+      '<p style="color:#e74c3c">Erro ao carregar galeria. Verifique a configuração.</p>';
   }
-
-  container.innerHTML = imagens
-    .map((img) => {
-      // Limpa o nome para ficar mais bonito (remove pasta e extensão se quiser, ou deixa completo)
-      // Aqui mostramos o public_id completo (ex: "cegonha_cardapio/burger")
-      const nomeExibicao = img.name.split("/").pop(); // Pega só o final do nome (ex: "burger")
-
-      return `
-        <div class="gallery-item" onclick="selecionarImagemCloud('${img.url}')" title="${img.name}">
-            <button class="btn-delete-img" 
-                    onclick="apagarImagemCloud(event, '${img.name}')" 
-                    title="Apagar permanentemente">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-            
-            <img src="${img.url}" loading="lazy">
-            
-            <div class="gallery-name">${nomeExibicao}</div>
-        </div>
-    `;
-    })
-    .join("");
 };
 
 window.fecharGaleriaNuvem = function () {
@@ -954,10 +968,7 @@ window.fecharGaleriaNuvem = function () {
 };
 
 window.selecionarImagemCloud = function (url) {
-  // 1. Preenche o input escondido do formulário de produto
   document.getElementById("prod-image-url").value = url;
-
-  // 2. Atualiza o visual (Preview)
   const img = document.getElementById("preview-img");
   const icon = document.getElementById("preview-icon");
 
@@ -965,14 +976,11 @@ window.selecionarImagemCloud = function (url) {
   img.style.display = "block";
   icon.style.display = "none";
 
-  // 3. Fecha a galeria
   fecharGaleriaNuvem();
 };
 
-// Função de Apagar Imagem
 async function apagarImagemCloud(event, publicId) {
-  event.stopPropagation(); // Impede que o clique selecione a imagem ao tentar apagar
-
+  event.stopPropagation();
   if (
     !confirm(
       "Tem certeza? Essa imagem será apagada do servidor permanentemente."
@@ -981,14 +989,11 @@ async function apagarImagemCloud(event, publicId) {
     return;
 
   const btn = event.currentTarget;
-  // Feedback visual no botão de lixo
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
   const sucesso = await deleteCloudImage(publicId);
 
   if (sucesso) {
-    // REUTILIZA A FUNÇÃO UNIFICADA:
-    // Chama a abrirGaleriaNuvem novamente para recarregar a lista atualizada
     await window.abrirGaleriaNuvem();
   } else {
     alert("Erro ao apagar. Verifique se tem permissão.");
@@ -996,19 +1001,29 @@ async function apagarImagemCloud(event, publicId) {
   }
 }
 
+window.apagarImagemCloud = apagarImagemCloud;
+
+// --- TAXAS DE ENTREGA ---
+
 window.carregarBairrosAdmin = async function () {
   const lista = await fetchNeighborhoodsAdmin();
   const container = document.getElementById("delivery-list");
+  if (!container) return;
 
   container.innerHTML = lista
-    .map(
-      (b) => `
+    .map((b) => {
+      // [FIX] Converte preço para float antes de formatar
+      const taxaFloat = parseFloat(b.price || 0);
+
+      return `
         <div class="coupon-card" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <strong style="color:var(--color-gold); font-size:1.1rem;">${
                   b.name
                 }</strong>
-                <div style="color:#ccc;">Taxa: R$ ${b.price.toFixed(2)}</div>
+                <div style="color:#ccc;">Taxa: R$ ${taxaFloat
+                  .toFixed(2)
+                  .replace(".", ",")}</div>
             </div>
             <button class="btn-small btn-cancel" onclick="apagarBairro(${
               b.id
@@ -1016,8 +1031,8 @@ window.carregarBairrosAdmin = async function () {
                 <i class="fa-solid fa-trash"></i>
             </button>
         </div>
-    `
-    )
+    `;
+    })
     .join("");
 };
 
@@ -1043,30 +1058,21 @@ window.apagarBairro = async function (id) {
   }
 };
 
-// Exporta a função de apagar para o HTML poder usar no onclick
-window.apagarImagemCloud = apagarImagemCloud;
-
-// ==========================================
-//  SISTEMA DE IMPRESSÃO TÉRMICA
-// ==========================================
+// --- IMPRESSÃO ---
 
 window.imprimirComanda = function (id) {
-  // 1. Encontra o pedido na memória
   const pedido = pedidosDoDia.find((p) => p.id === id);
   if (!pedido)
     return alert("Erro: Pedido não encontrado na memória. Atualize a página.");
 
-  // 2. Formata Data
   const dataObj = new Date(pedido.date_created);
   const dataFormatada =
     dataObj.toLocaleDateString("pt-BR") +
     " " +
     dataObj.toLocaleTimeString("pt-BR").slice(0, 5);
 
-  // 3. Monta Itens
   let itensHtml = "";
   pedido.items.forEach((item) => {
-    // Processa personalizações para exibir no papel
     let detalhes = "";
     if (item.customizations_json) {
       try {
@@ -1086,18 +1092,24 @@ window.imprimirComanda = function (id) {
       } catch (e) {}
     }
 
+    // [FIX] Preços com parseFloat para impressão
+    const priceAtTime = parseFloat(item.price_at_time || 0);
+    const subtotal = priceAtTime * item.quantity;
+
     itensHtml += `
       <div style="margin-bottom:5px; border-bottom:1px dashed #ccc; padding-bottom:2px;">
         <div style="display:flex; justify-content:space-between; font-weight:bold;">
             <span>${item.quantity}x ${item.product.name}</span>
-            <span>R$ ${(item.price_at_time * item.quantity).toFixed(2)}</span>
+            <span>R$ ${subtotal.toFixed(2)}</span>
         </div>
         ${detalhes}
       </div>
     `;
   });
 
-  // 4. Monta o Layout da Comanda (HTML Puro)
+  const deliveryFee = parseFloat(pedido.delivery_fee || 0);
+  const totalPrice = parseFloat(pedido.total_price || 0);
+
   const conteudoJanela = `
     <html>
       <head>
@@ -1139,11 +1151,11 @@ window.imprimirComanda = function (id) {
         <div class="section">
           <div style="display:flex; justify-content:space-between;">
              <span>Taxa Entrega:</span>
-             <span>R$ ${(pedido.delivery_fee || 0).toFixed(2)}</span>
+             <span>R$ ${deliveryFee.toFixed(2)}</span>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; margin-top:5px;">
              <span>TOTAL:</span>
-             <span>R$ ${pedido.total_price.toFixed(2)}</span>
+             <span>R$ ${totalPrice.toFixed(2)}</span>
           </div>
         </div>
 
@@ -1155,17 +1167,16 @@ window.imprimirComanda = function (id) {
     </html>
   `;
 
-  // 5. Abre Janela e Imprime
   const janela = window.open("", "_blank", "width=350,height=600");
   janela.document.write(conteudoJanela);
   janela.document.close();
 
-  // Aguarda carregar para imprimir
   setTimeout(() => {
     janela.print();
-    // janela.close(); // Opcional: fechar automaticamente após imprimir
   }, 500);
 };
+
+// --- OUTROS ---
 
 const diasSemana = [
   "Domingo",
@@ -1180,6 +1191,7 @@ const diasSemana = [
 window.carregarHorariosAdmin = async function () {
   const lista = await fetchSchedule();
   const tbody = document.getElementById("schedule-list-body");
+  if (!tbody) return;
 
   tbody.innerHTML = lista
     .map(
@@ -1226,266 +1238,6 @@ window.salvarHorarios = async function () {
   }
 };
 
-window.carregarDashboard = async function () {
-  const dados = await fetchDashboardStats();
-  if (!dados) return;
-
-  // Preenche cards
-  document.getElementById("stat-hoje").innerText = `R$ ${dados.hoje.toFixed(
-    2
-  )}`;
-  document.getElementById("stat-mes").innerText = `R$ ${dados.mes.toFixed(2)}`;
-
-  // Renderiza Gráfico
-  const ctx = document.getElementById("salesChart").getContext("2d");
-
-  if (chartInstance) chartInstance.destroy(); // Limpa anterior
-
-  chartInstance = new Chart(ctx, {
-    type: "bar", // ou 'line'
-    data: {
-      labels: dados.grafico.labels,
-      datasets: [
-        {
-          label: "Vendas (R$)",
-          data: dados.grafico.data,
-          backgroundColor: "#f2c94c",
-          borderColor: "#f2c94c",
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: "white" } },
-      },
-      scales: {
-        y: { ticks: { color: "#ccc" }, grid: { color: "#333" } },
-        x: { ticks: { color: "#ccc" }, grid: { display: false } },
-      },
-    },
-  });
-};
-
-// --- DOSSIÊ DE INVESTIGAÇÃO ---
-window.abrirDossie = async function (id) {
-  const dossie = await fetchOrderDossier(id);
-  if (!dossie) return alert("Erro ao carregar dossiê.");
-
-  const container = document.getElementById("dossier-body");
-  const d = dossie; // Atalho
-
-  // Formata JSON dos itens para leitura
-  const itensLegiveis = d.items
-    .map((i) => ` - ${i.quantity}x ${i.product.name} (R$ ${i.price_at_time})`)
-    .join("<br>");
-
-  container.innerHTML = `
-        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
-            <strong>🆔 PEDIDO:</strong> #${d.id}<br>
-            <strong>📅 DATA:</strong> ${new Date(
-              d.date_created
-            ).toLocaleString()}<br>
-            <strong>👤 CLIENTE:</strong> ${d.customer_name} (${
-    d.customer_phone
-  })<br>
-            <strong>🚦 STATUS ATUAL:</strong> ${d.status}
-        </div>
-
-        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
-            <strong>💳 PAGAMENTO:</strong><br>
-            Método: ${d.payment_method}<br>
-            Status do Pagamento: <span style="color:${
-              d.payment_status === "approved" ? "#2ecc71" : "#e74c3c"
-            }">${d.payment_status}</span><br>
-            Total Pago: R$ ${d.total_price.toFixed(2)}
-        </div>
-
-        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
-            <strong>📍 ENTREGA:</strong><br>
-            ${d.street}, ${d.number}<br>
-            ${d.neighborhood} ${d.complement ? "- " + d.complement : ""}<br>
-            Taxa Cobrada: R$ ${(d.delivery_fee || 0).toFixed(2)}
-        </div>
-
-        <div style="background:#222; padding:10px; border-radius:5px;">
-            <strong>🍔 ITENS ORIGINAIS:</strong><br>
-            ${itensLegiveis}
-        </div>
-        
-        <p style="font-size:0.8rem; color:#666; margin-top:10px; text-align:center;">
-            Documento gerado digitalmente pelo sistema Cegonha Lanches.<br>
-            ID Auditoria: ${Date.now()}-${d.id}
-        </p>
-    `;
-
-  document.getElementById("modal-dossier").style.display = "flex";
-};
-
-window.fecharDossie = function () {
-  document.getElementById("modal-dossier").style.display = "none";
-};
-
-// js/admin.js
-
-// --- FILTROS ---
-window.abrirModalFiltro = function () {
-  document.getElementById("modal-filter-orders").style.display = "flex";
-};
-
-window.fecharModalFiltro = function () {
-  document.getElementById("modal-filter-orders").style.display = "none";
-};
-
-// Mostra/Esconde inputs de data
-window.toggleDatasManuais = function () {
-  const val = document.getElementById("filter-period").value;
-  const row = document.getElementById("filter-dates-row");
-  row.style.display = val === "manual" ? "flex" : "none";
-};
-
-// Lógica Principal de Filtragem
-window.aplicarFiltros = function () {
-  const period = document.getElementById("filter-period").value;
-  const name = document.getElementById("filter-name").value;
-  const payment = document.getElementById("filter-payment").value;
-  const id = document.getElementById("filter-id").value;
-
-  let start = "";
-  let end = "";
-
-  // Calcula datas baseado na seleção
-  const hoje = new Date();
-
-  if (period === "hoje") {
-    start = hoje.toISOString().split("T")[0];
-    end = start;
-  } else if (period === "mes") {
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    start = primeiroDia.toISOString().split("T")[0];
-    end = hoje.toISOString().split("T")[0];
-  } else if (period === "ano") {
-    const primeiroDia = new Date(hoje.getFullYear(), 0, 1);
-    start = primeiroDia.toISOString().split("T")[0];
-    end = hoje.toISOString().split("T")[0];
-  } else if (period === "manual") {
-    start = document.getElementById("filter-start").value;
-    end = document.getElementById("filter-end").value;
-  }
-  // 'todos' deixa start/end vazios
-
-  // Monta objeto
-  const filtros = {};
-  if (start) filtros.start_date = start;
-  if (end) filtros.end_date = end;
-  if (name) filtros.customer_name = name;
-  if (payment) filtros.payment_method = payment;
-  if (id) filtros.order_id = id;
-
-  // Chama a função de carregar passando os filtros
-  // Precisamos atualizar a função carregarPedidosAdmin para aceitar argumentos
-  carregarPedidosAdmin(filtros);
-  fecharModalFiltro();
-};
-
-window.limparFiltros = function () {
-  document.getElementById("filter-period").value = "hoje";
-  document.getElementById("filter-name").value = "";
-  document.getElementById("filter-payment").value = "";
-  document.getElementById("filter-id").value = "";
-  toggleDatasManuais();
-  aplicarFiltros(); // Reseta para hoje
-};
-
-// --- ATUALIZE A FUNÇÃO carregarPedidosAdmin ---
-window.carregarPedidosAdmin = async function (filtrosOpcionais = null) {
-  const container = document.getElementById("admin-orders-list");
-  const btn = document.querySelector("#panel-orders .btn-outline");
-
-  if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> ...';
-
-  // Se não vier filtros (ex: clique no botão atualizar), usa padrão (hoje) ou o último usado?
-  // Para simplificar, se clicar em atualizar sem filtros, busca HOJE.
-  // Se vier do modal, usa os filtros do modal.
-
-  let filtrosFinais = filtrosOpcionais;
-  if (!filtrosFinais) {
-    // Padrão: Hoje
-    const hoje = new Date().toISOString().split("T")[0];
-    filtrosFinais = { start_date: hoje, end_date: hoje };
-  }
-
-  const pedidos = await fetchAdminOrders(filtrosFinais);
-
-  pedidosDoDia = pedidos;
-
-  container.innerHTML = pedidos.length
-    ? pedidos.map((p) => renderOrderCard(p)).join("")
-    : '<div style="text-align:center; padding:20px; color:#666; grid-column: 1 / -1;">Nenhum pedido encontrado com estes filtros.</div>';
-
-  if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
-};
-
-window.abrirModalFiltroRelatorio = function () {
-  document.getElementById("modal-filter-reports").style.display = "flex";
-};
-
-window.fecharModalFiltroRelatorio = function () {
-  document.getElementById("modal-filter-reports").style.display = "none";
-};
-
-window.toggleDatasRelatorio = function () {
-  const val = document.getElementById("rep-period").value;
-  document.getElementById("rep-dates-row").style.display =
-    val === "manual" ? "flex" : "none";
-};
-
-// js/admin.js
-
-window.aplicarFiltroRelatorio = function () {
-  const period = document.getElementById("rep-period").value;
-  const payment = document.getElementById("rep-payment").value;
-
-  let start = "";
-  let end = "";
-  const hoje = new Date();
-  start = hoje.toISOString().split("T")[0];
-  end = start;
-
-  if (period === "hoje") {
-    start = hoje.toISOString().split("T")[0];
-    end = start;
-  } else if (period === "semana") {
-    // [NOVA LÓGICA] Esta Semana (De Domingo até Hoje)
-    const primeiroDia = new Date(hoje);
-    const diaDaSemana = hoje.getDay(); // 0 = Domingo, 1 = Segunda...
-
-    // Subtrai os dias para voltar ao último Domingo
-    primeiroDia.setDate(hoje.getDate() - diaDaSemana);
-
-    start = primeiroDia.toISOString().split("T")[0];
-    end = hoje.toISOString().split("T")[0];
-  } else if (period === "mes") {
-    // Do dia 1 até hoje
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    start = primeiroDia.toISOString().split("T")[0];
-    end = hoje.toISOString().split("T")[0];
-  } else if (period === "manual") {
-    start = document.getElementById("rep-start").value;
-    end = document.getElementById("rep-end").value;
-  }
-
-  const filtros = {};
-  if (start) filtros.start_date = start;
-  if (end) filtros.end_date = end;
-  if (payment) filtros.payment_method = payment;
-
-  carregarDashboard(filtros);
-  fecharModalFiltroRelatorio();
-};
-
-// [ATUALIZADO] Função principal do Dashboard
 window.carregarDashboard = async function (filtros = {}) {
   const btn = document.querySelector("#panel-reports .btn-outline");
   if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -1496,32 +1248,33 @@ window.carregarDashboard = async function (filtros = {}) {
 
   if (!dados) return;
 
-  // Atualiza Textos
+  // [FIX] ParseFloat para evitar erros de gráfico
+  const totalPeriodo = parseFloat(dados.total_periodo || 0);
+
   document.getElementById(
     "stat-faturamento"
-  ).innerText = `R$ ${dados.total_periodo.toFixed(2)}`;
+  ).innerText = `R$ ${totalPeriodo.toFixed(2)}`;
   document.getElementById("stat-qtd").innerText = dados.qtd_pedidos;
   document.getElementById(
     "report-period-label"
   ).innerText = `Período: ${dados.periodo_info}`;
 
-  // Renderiza Gráfico
   const ctx = document.getElementById("salesChart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
-    type: "line", // Mudei para linha, fica mais bonito para evolução temporal
+    type: "line",
     data: {
       labels: dados.grafico.labels,
       datasets: [
         {
           label: "Vendas (R$)",
-          data: dados.grafico.data,
+          data: dados.grafico.data, // Chart.js lida bem com strings numéricas, mas se der erro, faça um .map(parseFloat)
           backgroundColor: "rgba(242, 201, 76, 0.2)",
           borderColor: "#f2c94c",
           borderWidth: 2,
           fill: true,
-          tension: 0.4, // Curva suave
+          tension: 0.4,
         },
       ],
     },
@@ -1543,4 +1296,192 @@ window.carregarDashboard = async function (filtros = {}) {
       },
     },
   });
+};
+
+window.abrirDossie = async function (id) {
+  const dossie = await fetchOrderDossier(id);
+  if (!dossie) return alert("Erro ao carregar dossiê.");
+
+  const container = document.getElementById("dossier-body");
+  const d = dossie;
+
+  const itensLegiveis = d.items
+    .map(
+      (i) =>
+        ` - ${i.quantity}x ${i.product.name} (R$ ${parseFloat(
+          i.price_at_time
+        ).toFixed(2)})`
+    )
+    .join("<br>");
+
+  const totalDossie = parseFloat(d.total_price || 0).toFixed(2);
+  const taxaDossie = parseFloat(d.delivery_fee || 0).toFixed(2);
+
+  container.innerHTML = `
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>🆔 PEDIDO:</strong> #${d.id}<br>
+            <strong>📅 DATA:</strong> ${new Date(
+              d.date_created
+            ).toLocaleString()}<br>
+            <strong>👤 CLIENTE:</strong> ${d.customer_name} (${
+    d.customer_phone
+  })<br>
+            <strong>🚦 STATUS ATUAL:</strong> ${d.status}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>💳 PAGAMENTO:</strong><br>
+            Método: ${d.payment_method}<br>
+            Status do Pagamento: <span style="color:${
+              d.payment_status === "approved" ? "#2ecc71" : "#e74c3c"
+            }">${d.payment_status}</span><br>
+            Total Pago: R$ ${totalDossie}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
+            <strong>📍 ENTREGA:</strong><br>
+            ${d.street}, ${d.number}<br>
+            ${d.neighborhood} ${d.complement ? "- " + d.complement : ""}<br>
+            Taxa Cobrada: R$ ${taxaDossie}
+        </div>
+
+        <div style="background:#222; padding:10px; border-radius:5px;">
+            <strong>🍔 ITENS ORIGINAIS:</strong><br>
+            ${itensLegiveis}
+        </div>
+        
+        <p style="font-size:0.8rem; color:#666; margin-top:10px; text-align:center;">
+            Documento gerado digitalmente pelo sistema Cegonha Lanches.<br>
+            ID Auditoria: ${Date.now()}-${d.id}
+        </p>
+    `;
+
+  document.getElementById("modal-dossier").style.display = "flex";
+};
+
+window.fecharDossie = function () {
+  document.getElementById("modal-dossier").style.display = "none";
+};
+
+// --- FILTROS ---
+
+window.abrirModalFiltro = function () {
+  document.getElementById("modal-filter-orders").style.display = "flex";
+};
+
+window.fecharModalFiltro = function () {
+  document.getElementById("modal-filter-orders").style.display = "none";
+};
+
+window.toggleDatasManuais = function () {
+  const val = document.getElementById("filter-period").value;
+  const row = document.getElementById("filter-dates-row");
+  if (row) row.style.display = val === "manual" ? "flex" : "none";
+};
+
+window.aplicarFiltros = function () {
+  const period = document.getElementById("filter-period").value;
+  const name = document.getElementById("filter-name").value;
+  const payment = document.getElementById("filter-payment").value;
+  const id = document.getElementById("filter-id").value;
+
+  let start = "";
+  let end = "";
+  const hoje = new Date();
+
+  if (period === "hoje") {
+    start = hoje.toISOString().split("T")[0];
+    end = start;
+  } else if (period === "mes") {
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "ano") {
+    const primeiroDia = new Date(hoje.getFullYear(), 0, 1);
+    start = primeiroDia.toISOString().split("T")[0];
+    end = hoje.toISOString().split("T")[0];
+  } else if (period === "manual") {
+    start = document.getElementById("filter-start").value;
+    end = document.getElementById("filter-end").value;
+  }
+
+  const filtros = {};
+  if (start) filtros.start_date = start;
+  if (end) filtros.end_date = end;
+  if (name) filtros.customer_name = name;
+  if (payment) filtros.payment_method = payment;
+  if (id) filtros.order_id = id;
+
+  carregarPedidosAdmin(filtros);
+  fecharModalFiltro();
+};
+
+window.limparFiltros = function () {
+  document.getElementById("filter-period").value = "hoje";
+  document.getElementById("filter-name").value = "";
+  document.getElementById("filter-payment").value = "";
+  document.getElementById("filter-id").value = "";
+  toggleDatasManuais();
+  aplicarFiltros();
+};
+
+window.abrirModalFiltroRelatorio = function () {
+  document.getElementById("modal-filter-reports").style.display = "flex";
+};
+
+window.fecharModalFiltroRelatorio = function () {
+  document.getElementById("modal-filter-reports").style.display = "none";
+};
+
+window.toggleDatasRelatorio = function () {
+  const val = document.getElementById("rep-period").value;
+  const row = document.getElementById("rep-dates-row");
+  if (row) row.style.display = val === "manual" ? "flex" : "none";
+};
+
+window.aplicarFiltroRelatorio = function () {
+  const period = document.getElementById("rep-period").value;
+  const payment = document.getElementById("rep-payment").value;
+
+  let start = "";
+  let end = "";
+  const hoje = new Date();
+
+  // Padrão de segurança: Hoje
+  start = hoje.toISOString().split("T")[0];
+  end = start;
+
+  try {
+    if (period === "hoje") {
+      start = hoje.toISOString().split("T")[0];
+      end = start;
+    } else if (period === "semana") {
+      const primeiroDia = new Date(hoje);
+      const diaDaSemana = hoje.getDay();
+      primeiroDia.setDate(hoje.getDate() - diaDaSemana);
+      start = primeiroDia.toISOString().split("T")[0];
+      end = hoje.toISOString().split("T")[0];
+    } else if (period === "mes") {
+      const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      start = primeiroDia.toISOString().split("T")[0];
+      end = hoje.toISOString().split("T")[0];
+    } else if (period === "manual") {
+      const s = document.getElementById("rep-start").value;
+      const e = document.getElementById("rep-end").value;
+      if (s && e) {
+        start = s;
+        end = e;
+      }
+    }
+  } catch (e) {
+    console.warn("Erro ao calcular datas", e);
+  }
+
+  const filtros = {};
+  if (start) filtros.start_date = start;
+  if (end) filtros.end_date = end;
+  if (payment) filtros.payment_method = payment;
+
+  carregarDashboard(filtros);
+  fecharModalFiltroRelatorio();
 };
