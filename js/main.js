@@ -110,6 +110,93 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   };
+
+  // ===========================================================================
+  //  SISTEMA REAL-TIME (SOCKET.IO) - CLIENTE
+  // ===========================================================================
+
+  // 1. Conexão
+  const socketUrl =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "https://seu-backend.com";
+  const socket = io(socketUrl);
+
+  socket.on("connect", () => {
+    console.log("🟢 Conectado ao servidor!");
+  });
+
+  // 2. Atualização de Status do Pedido
+  socket.on("status_update", (data) => {
+    const { user } = getSession();
+    // Só reage se o pedido for MEU
+    if (user && user.id === data.user_id) {
+      console.log("🔔 Seu pedido mudou de status:", data.status);
+
+      // Toca som de notificação suave
+      const audio = new Audio("assets/notification.mp3");
+      audio.play().catch(() => {});
+
+      showToast(
+        `Seu pedido #${data.order_id} agora está: ${data.status}`,
+        "success"
+      );
+
+      // Se o modal de pedidos estiver aberto, atualiza a lista
+      const modalOrders = document.getElementById("modal-orders");
+      if (modalOrders && modalOrders.style.display === "flex") {
+        abrirHistoricoPedidos(); // Recarrega a lista
+      }
+    }
+  });
+
+  // 3. Chat Instantâneo
+  socket.on("chat_message", (msg) => {
+    const { user } = getSession();
+    // Só mostra se a mensagem for MINHA ou PARA MIM (do admin)
+    if (user && user.id === msg.user_id) {
+      // Se a janela de chat estiver aberta, desenha a mensagem
+      const chatBody = document.getElementById("chat-body");
+      if (
+        chatBody &&
+        document.getElementById("modal-chat").style.display === "flex"
+      ) {
+        appendMessage(msg.message, msg.is_from_admin ? "received" : "sent");
+      } else if (msg.is_from_admin) {
+        // Se fechado, mostra aviso
+        showToast("Nova mensagem do restaurante!", "info");
+        const btnChat = document.querySelector(".floating-chat");
+        if (btnChat) btnChat.classList.add("notify"); // Adicione um CSS para piscar
+      }
+    }
+  });
+
+  // 4. Controle de Estoque (Pausar/Despausar)
+  socket.on("product_toggle", (data) => {
+    console.log("📦 Atualização de estoque:", data);
+
+    // Procura o botão de compra desse produto na tela
+    const btn = document.querySelector(
+      `button[onclick="adicionarAoCarrinho(${data.id})"]`
+    );
+    const card = btn ? btn.closest(".product-card") : null;
+
+    if (btn && card) {
+      if (!data.is_available) {
+        // Produto Esgotou
+        btn.disabled = true;
+        btn.innerText = "Indisponível";
+        btn.style.backgroundColor = "#555";
+        card.style.opacity = "0.7";
+      } else {
+        // Produto Voltou
+        btn.disabled = false;
+        btn.innerHTML = `Adicionar <i class="fa-solid fa-cart-plus"></i>`;
+        btn.style.backgroundColor = ""; // Volta ao original (CSS)
+        card.style.opacity = "1";
+      }
+    }
+  });
 });
 
 // EXPORTA FUNÇÕES PARA O HTML USAR (onclick="")
@@ -840,37 +927,56 @@ function createComboCard(item) {
     </div>`;
 }
 
-async function initBairrosSelect() {
-  const select = document.getElementById("bairro");
-  if (!select) return;
+// site/js/main.js
 
+async function initBairrosSelect() {
+  // 1. Busca lista da API
   const bairros = await fetchNeighborhoodsPublic();
 
-  // Limpa e preenche
-  select.innerHTML =
+  // Gera o HTML das opções
+  let optionsHtml =
     '<option value="" disabled selected>Selecione seu Bairro...</option>';
 
   if (bairros.length === 0) {
-    select.innerHTML +=
+    optionsHtml +=
       '<option value="" disabled>Nenhum bairro cadastrado</option>';
+  } else {
+    bairros.forEach((b) => {
+      optionsHtml += `<option value="${b.name}" data-price="${b.price}">${b.name}</option>`;
+    });
   }
 
-  bairros.forEach((b) => {
-    select.innerHTML += `<option value="${b.name}" data-price="${b.price}">${b.name} </option>`;
-  });
+  // --- PREENCHE O SELECT DO CHECKOUT (Cálculo de Frete) ---
+  const selectCheckout = document.getElementById("bairro");
+  if (selectCheckout) {
+    selectCheckout.innerHTML = optionsHtml;
 
-  // Evento ao mudar a opção
-  select.addEventListener("change", function () {
-    const option = this.options[this.selectedIndex];
-    // Se não tiver preço (ex: opção padrão), assume 0
-    taxaEntregaAtual = parseFloat(option.getAttribute("data-price") || 0);
+    // Evento específico do checkout (Atualizar taxa)
+    selectCheckout.addEventListener("change", function () {
+      const option = this.options[this.selectedIndex];
+      taxaEntregaAtual = parseFloat(option.getAttribute("data-price") || 0);
+      const display = document.getElementById("delivery-fee-display");
+      if (display) {
+        display.innerText = `R$ ${taxaEntregaAtual
+          .toFixed(2)
+          .replace(".", ",")}`;
+      }
+    });
+  }
 
-    // Atualiza o texto na tela
-    const display = document.getElementById("delivery-fee-display");
-    if (display) {
-      display.innerText = `R$ ${taxaEntregaAtual.toFixed(2).replace(".", ",")}`;
-    }
-  });
+  // --- PREENCHE O SELECT DO MODAL "MEUS ENDEREÇOS" (Apenas cadastro) ---
+  const selectNovoEnd = document.getElementById("new-bairro-select");
+  if (selectNovoEnd) {
+    selectNovoEnd.innerHTML = optionsHtml;
+    // Aqui não precisa calcular taxa, é só para salvar o nome
+  }
+  const selectElement = document.getElementById("new-bairro-select");
+  if (selectElement) {
+    selectElement.addEventListener("change", function () {
+      // Quando seleciona algo, muda a cor para branco (texto normal)
+      this.style.color = "var(--color-text)";
+    });
+  }
 }
 
 function initContactForm() {
@@ -1314,14 +1420,25 @@ async function excluirEndereco(id) {
 }
 
 // Listener do Form de Novo Endereço
+// site/js/main.js
+
 const formNewAddr = document.getElementById("form-new-address");
 if (formNewAddr) {
   formNewAddr.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // [CORREÇÃO] Pega o valor do SELECT novo
+    const bairroSelect = document.getElementById("new-bairro-select");
+    const bairroValor = bairroSelect ? bairroSelect.value : "";
+
+    if (!bairroValor) {
+      return showToast("Selecione um bairro válido.", "warning");
+    }
+
     const data = {
       street: document.getElementById("new-street").value,
       number: document.getElementById("new-number").value,
-      neighborhood: document.getElementById("new-neighbor").value,
+      neighborhood: bairroValor, // Usa o valor do dropdown
       complement: document.getElementById("new-comp").value,
     };
 
@@ -1330,13 +1447,16 @@ if (formNewAddr) {
       formNewAddr.reset();
       formNewAddr.style.display = "none";
       carregarListaEnderecos();
+      showToast("Endereço salvo com sucesso!", "success");
     } else {
-      showToast("Erro ao salvar endereço");
+      showToast("Erro ao salvar endereço", "error");
     }
   });
 }
 let ordersInterval = null;
 // --- HISTÓRICO DE PEDIDOS ---
+
+// site/js/main.js
 
 async function abrirHistoricoPedidos() {
   const { user } = getSession();
@@ -1372,6 +1492,9 @@ async function abrirHistoricoPedidos() {
           minute: "2-digit",
         });
 
+        // [CORREÇÃO] Converte o total do pedido para número
+        const totalPedido = parseFloat(p.total_price);
+
         return `
             <div class="order-card">
                 <div class="order-header">
@@ -1382,18 +1505,22 @@ async function abrirHistoricoPedidos() {
                 </div>
                 <div class="order-body">
                     ${p.items
-                      .map(
-                        (i) =>
-                          `<div class="order-item-row">
+                      .map((i) => {
+                        // [CORREÇÃO] Converte o preço do item para número antes do toFixed
+                        const precoItem = parseFloat(i.price_at_time);
+
+                        return `<div class="order-item-row">
                             <span>${i.quantity}x ${i.product.name}</span>
-                            <span>R$ ${i.price_at_time.toFixed(2)}</span>
-                         </div>`
-                      )
+                            <span>R$ ${precoItem
+                              .toFixed(2)
+                              .replace(".", ",")}</span>
+                         </div>`;
+                      })
                       .join("")}
                 </div>
                 <div class="order-footer">
                     <span>Total:</span>
-                    <span class="order-total">R$ ${p.total_price
+                    <span class="order-total">R$ ${totalPedido
                       .toFixed(2)
                       .replace(".", ",")}</span>
                 </div>

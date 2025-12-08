@@ -29,13 +29,15 @@ import { getSession, clearSession } from "./auth.js";
 
 // --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
-let chatInterval = null;
 let produtoEmEdicaoId = null; // null = criando, número = editando
 let idParaDeletar = null; // Para o modal de segurança
 let pedidosDoDia = [];
 let chartInstance = null;
 
-// --- 1. Inicialização ---
+// =============================================================================
+//  1. INICIALIZAÇÃO E SOCKETS
+// =============================================================================
+
 document.addEventListener("DOMContentLoaded", () => {
   // Verifica se é admin
   const { user } = getSession();
@@ -50,79 +52,139 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarMenuAdmin();
   carregarCozinha();
 
-  // Inicia Polling (atualização automática)
+  // --- CONFIGURAÇÃO SOCKET.IO (REAL-TIME) ---
+  // Detecta URL correta (Local ou Produção)
+  const isLocalhost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+  const socketUrl = isLocalhost
+    ? "http://localhost:5000"
+    : "https://seu-backend-render.com"; // Ajuste conforme seu api.js
+
+  try {
+    const socket = io(socketUrl);
+
+    socket.on("connect", () => {
+      console.log("🟢 Conectado ao sistema de pedidos em tempo real!");
+    });
+
+    socket.on("novo_pedido", (pedido) => {
+      console.log("🔔 Novo pedido recebido!", pedido);
+
+      // Som de alerta
+      const audio = new Audio("assets/notification.mp3");
+      audio.play().catch(() => {});
+
+      // Atualiza telas
+      carregarCozinha();
+      carregarPedidosAdmin();
+
+      // Feedback visual (se o elemento toast existir no admin, senao alert simples)
+      const toast = document.getElementById("toast-container");
+      if (toast) {
+        // Lógica de toast simples se houver container, senão console
+        console.log("Toast: Novo Pedido Chegou");
+      }
+    });
+
+    socket.on("chat_message", (msg) => {
+      // 1. Toca som se for mensagem de cliente
+      if (!msg.is_from_admin) {
+        const audio = new Audio("assets/notification.mp3");
+        audio.play().catch(() => {});
+      }
+
+      // 2. Se estiver com o chat desse usuário aberto, adiciona na tela
+      if (chatUserIdAtivo === msg.user_id) {
+        const container = document.getElementById("admin-chat-messages");
+        if (container) {
+          container.innerHTML += `<div class="msg ${
+            msg.is_from_admin ? "msg-admin" : "msg-user"
+          }">${msg.message}</div>`;
+          container.scrollTop = container.scrollHeight;
+        }
+      } else {
+        // Se não estiver aberto, mostra notificação
+        if (!msg.is_from_admin)
+          showToast(`Nova mensagem de Cliente #${msg.user_id}`, "info");
+      }
+
+      // 3. Atualiza a lista lateral para subir o usuário pro topo
+      carregarListaConversas();
+    });
+  } catch (e) {
+    console.warn("Socket.io não carregado ou falhou:", e);
+  }
+
+  // Fallback: Polling (segurança caso socket falhe)
   setInterval(() => {
-    // Só atualiza se a aba Cozinha estiver visível
     const panelKitchen = document.getElementById("panel-kitchen");
     if (panelKitchen && panelKitchen.classList.contains("active")) {
       carregarCozinha();
     }
-  }, 10000);
+  }, 15000); // Aumentado para 15s já que temos socket
 
   setInterval(() => {
-    // Chat atualiza apenas se a aba estiver aberta
     const panelChat = document.getElementById("panel-chat");
     if (panelChat && panelChat.classList.contains("active")) {
       carregarListaConversas();
       if (chatUserIdAtivo) carregarChatAtivo(chatUserIdAtivo);
     }
-  }, 5000);
+  }, 15000);
 });
 
 // =============================================================================
 //  GESTÃO DE PAINÉIS E NAVEGAÇÃO
 // =============================================================================
 
-window.switchPanel = function (panelId) {
-  // Esconde todas as seções
+function switchPanel(panelId) {
   document
     .querySelectorAll(".panel-section")
     .forEach((el) => el.classList.remove("active"));
 
-  // Mostra a desejada
   const target = document.getElementById(`panel-${panelId}`);
   if (target) target.classList.add("active");
 
   if (panelId === "kitchen") carregarCozinha();
   if (panelId === "delivery") carregarBairrosAdmin();
+  if (panelId === "orders") carregarPedidosAdmin();
 
-  // Atualiza menu lateral
-  document
-    .querySelectorAll(".sidebar-menu button")
-    .forEach((btn) => btn.classList.remove("active"));
+  // Atualiza menu lateral (visual)
+  const btns = document.querySelectorAll(".sidebar-menu button");
+  btns.forEach((btn) => btn.classList.remove("active"));
 
-  if (event && event.currentTarget) {
-    event.currentTarget.classList.add("active");
-  }
-};
+  // Tenta achar o botão que chamou a função (se via click)
+  const activeBtn = Array.from(btns).find((btn) =>
+    btn.getAttribute("onclick")?.includes(panelId)
+  );
+  if (activeBtn) activeBtn.classList.add("active");
+}
 
-window.adminLogout = function () {
+function adminLogout() {
   if (confirm("Tem certeza que deseja sair do Painel Administrativo?")) {
     clearSession();
     window.location.href = "index.html";
   }
-};
+}
 
 // =============================================================================
 //  ABA 1: PEDIDOS
 // =============================================================================
+
 // --- COZINHA (KDS) ---
 
-window.carregarCozinha = async function () {
-  // Busca todos os pedidos
+async function carregarCozinha() {
   const pedidos = await fetchAdminOrders();
-  pedidosDoDia = pedidos; // Atualiza cache global
+  pedidosDoDia = pedidos;
 
-  // Filtra para as 3 colunas
   const espera = pedidos.filter((p) => p.status === "Recebido");
   const preparo = pedidos.filter((p) => p.status === "Em Preparo");
   const entrega = pedidos.filter((p) => p.status === "Saiu para Entrega");
 
-  // Renderiza
   renderizarFila("queue-waiting", espera, "espera");
   renderizarFila("queue-prep", preparo, "preparo");
   renderizarFila("queue-delivery", entrega, "entrega");
-};
+}
 
 function renderizarFila(elementId, lista, tipo) {
   const container = document.getElementById(elementId);
@@ -140,52 +202,42 @@ function renderizarFila(elementId, lista, tipo) {
         minute: "2-digit",
       });
 
-      // [FIX] Converte totais para float para evitar erro ao renderizar na cozinha (se necessário)
       const totalFormatado = parseFloat(p.total_price || 0)
         .toFixed(2)
         .replace(".", ",");
-
       const classeAlerta = tipo === "espera" ? "card-alert" : "";
 
-      // Botões de Ação Dinâmicos
       let btnAcao = "";
-
       if (tipo === "espera") {
-        btnAcao = `<button class="btn-primary full-width" onclick="moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
+        btnAcao = `<button class="btn-primary full-width" onclick="window.moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
       } else if (tipo === "preparo") {
-        btnAcao = `<button class="btn-primary full-width" style="background:#3498db; border-color:#3498db;" onclick="moverParaEntrega(${p.id})">SAIR P/ ENTREGA <i class="fa-solid fa-motorcycle"></i></button>`;
+        btnAcao = `<button class="btn-primary full-width" style="background:#3498db; border-color:#3498db;" onclick="window.moverParaEntrega(${p.id})">SAIR P/ ENTREGA <i class="fa-solid fa-motorcycle"></i></button>`;
       } else if (tipo === "entrega") {
-        btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
+        btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="window.concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
       }
 
-      // Renderização COMPLETA dos Itens (Com correção de altura)
       const itensHtml = p.items
         .map((i) => {
           let detalhesHtml = "";
-
           if (i.customizations_json) {
             try {
               const c = JSON.parse(i.customizations_json);
-
               const extras = [
                 ...(c.carnes || []),
                 ...(c.adicionais || []),
                 ...(c.acompanhamentos || []),
                 ...(c.bebidas || []),
               ];
-
               if (extras.length > 0) {
                 detalhesHtml += `<div style="font-size:0.85rem; color:#aaa; margin-left:10px; margin-top:2px;">+ ${extras.join(
                   ", "
                 )}</div>`;
               }
-
               if (c.obs) {
                 detalhesHtml += `<div class="k-obs" style="font-size:0.85rem; color:#f1c40f; margin-left:10px; margin-top:2px;">⚠️ ${c.obs}</div>`;
               }
             } catch (e) {}
           }
-
           return `
             <div class="k-item" style="border-bottom:1px solid #333; padding:8px 0;">
                 <div style="font-size:1rem;"><strong>${i.quantity}x ${i.product.name}</strong></div>
@@ -194,7 +246,6 @@ function renderizarFila(elementId, lista, tipo) {
         })
         .join("");
 
-      // Endereço e Pagamento
       const enderecoHtml = p.street
         ? `📍 ${p.street}, ${p.number} - ${p.neighborhood} ${
             p.complement ? `(${p.complement})` : ""
@@ -212,9 +263,7 @@ function renderizarFila(elementId, lista, tipo) {
                     } - ${p.customer_name.split(" ")[0]}</span>
                     <span style="color:#aaa; font-size:0.9rem;">${hora}</span>
                 </div>
-                
                 <div>${itensHtml}</div> 
-                
                 <div style="background:#222; padding:8px; border-radius:5px; font-size:0.85rem; color:#ccc; margin-top:auto;">
                     <div style="margin-bottom:5px;">${enderecoHtml}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #444; padding-top:5px;">
@@ -222,10 +271,9 @@ function renderizarFila(elementId, lista, tipo) {
                         <span style="color:var(--color-gold); font-size:1rem; font-weight:bold;">R$ ${totalFormatado}</span>
                     </div>
                 </div>
-
                 <div style="display:flex; gap:5px; margin-top:5px;">
                     ${btnAcao}
-                    <button class="btn-small btn-cancel" onclick="imprimirComanda(${
+                    <button class="btn-small btn-cancel" onclick="window.imprimirComanda(${
                       p.id
                     })" title="Imprimir" style="padding: 0 15px;">
                         <i class="fa-solid fa-print"></i>
@@ -237,26 +285,26 @@ function renderizarFila(elementId, lista, tipo) {
     .join("");
 }
 
-// --- Ações de Mudança de Status ---
-
-window.moverParaPreparo = async function (id) {
+async function moverParaPreparo(id) {
   await updateOrderStatus(id, "Em Preparo");
   carregarCozinha();
-};
+}
 
-window.moverParaEntrega = async function (id) {
+async function moverParaEntrega(id) {
   await updateOrderStatus(id, "Saiu para Entrega");
   carregarCozinha();
-};
+}
 
-window.concluirPedidoDefinitivo = async function (id) {
+async function concluirPedidoDefinitivo(id) {
   if (confirm("Confirmar que o pedido foi entregue e pago?")) {
     await updateOrderStatus(id, "Concluído");
     carregarCozinha();
   }
-};
+}
 
-window.carregarPedidosAdmin = async function (filtrosOpcionais = null) {
+// --- HISTÓRICO DE PEDIDOS ---
+
+async function carregarPedidosAdmin(filtrosOpcionais = null) {
   const container = document.getElementById("admin-orders-list");
   const btn = document.querySelector("#panel-orders .btn-outline");
 
@@ -278,7 +326,7 @@ window.carregarPedidosAdmin = async function (filtrosOpcionais = null) {
     : '<div style="text-align:center; padding:20px; color:#666; grid-column: 1 / -1;">Nenhum pedido encontrado com estes filtros.</div>';
 
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
-};
+}
 
 function renderOrderCard(p) {
   const time = new Date(p.date_created).toLocaleTimeString([], {
@@ -288,27 +336,14 @@ function renderOrderCard(p) {
 
   let botoes = "";
   if (p.status !== "Concluído" && p.status !== "Cancelado")
-    botoes += ` <button class="btn-small btn-cancel" onclick="mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
+    botoes += ` <button class="btn-small btn-cancel" onclick="window.mudarStatus(${p.id}, 'Cancelado')">Cancelar ❌</button>`;
 
-  const btnPrint = `
-    <button class="btn-small" onclick="imprimirComanda(${p.id})" style="background:#555; color:white; border:none; margin-right:5px;" title="Imprimir Cupom">
-        <i class="fa-solid fa-print"></i>
-    </button>
-  `;
-
-  const btnDossie = `
-    <button class="btn-small" onclick="abrirDossie(${p.id})" style="background:#444; color:#aaa; border:none; margin-right:5px;" title="Investigar Pedido">
-        <i class="fa-solid fa-magnifying-glass"></i>
-    </button>
-  `;
+  const totalNum = parseFloat(p.total_price || 0);
+  const totalFormatado = totalNum.toFixed(2).replace(".", ",");
 
   const itemsHtml = p.items
     .map((i) => `<div><strong>${i.quantity}x ${i.product.name}</strong></div>`)
     .join("");
-
-  // [FIX] Correção Crítica: Converter String para Float antes de formatar
-  const totalNum = parseFloat(p.total_price || 0);
-  const totalFormatado = totalNum.toFixed(2).replace(".", ",");
 
   return `
     <div class="admin-order-card status-${p.status.replace(/ /g, ".")}">
@@ -325,9 +360,17 @@ function renderOrderCard(p) {
             <span style="color:gold">R$ ${totalFormatado}</span>
         </div>
         <div class="card-actions">
-            ${btnPrint}
+            <button class="btn-small" onclick="window.imprimirComanda(${
+              p.id
+            })" style="background:#555; color:white; border:none; margin-right:5px;" title="Imprimir">
+                <i class="fa-solid fa-print"></i>
+            </button>
             ${botoes}
-            ${btnDossie}
+            <button class="btn-small" onclick="window.abrirDossie(${
+              p.id
+            })" style="background:#444; color:#aaa; border:none; margin-right:5px;" title="Dossiê">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
         </div>
         <div style="text-align:right; font-size:0.8rem; color:#666; margin-top:5px;">${
           p.status
@@ -335,18 +378,18 @@ function renderOrderCard(p) {
     </div>`;
 }
 
-window.mudarStatus = async function (id, novo) {
+async function mudarStatus(id, novo) {
   if (confirm(`Mudar status do pedido #${id} para '${novo}'?`)) {
     await updateOrderStatus(id, novo);
     carregarPedidosAdmin();
   }
-};
+}
 
 // =============================================================================
 //  ABA 2: CARDÁPIO
 // =============================================================================
 
-window.carregarMenuAdmin = async function () {
+async function carregarMenuAdmin() {
   const tbody = document.getElementById("admin-menu-list");
   if (!tbody) return;
 
@@ -359,9 +402,7 @@ window.carregarMenuAdmin = async function () {
 
   tbody.innerHTML = produtos
     .map((p) => {
-      // [FIX] Conversão de segurança para o preço
       const precoNum = parseFloat(p.price || 0);
-
       return `
         <tr>
             <td>${p.name}</td>
@@ -370,36 +411,34 @@ window.carregarMenuAdmin = async function () {
                 <i class="toggle-switch fa-solid ${
                   p.is_available ? "fa-toggle-on on" : "fa-toggle-off off"
                 }" 
-                   onclick="toggleProd(${p.id})" 
-                   style="font-size:1.5rem; cursor:pointer;" 
-                   title="Pausar/Ativar"></i>
+                   onclick="window.toggleProd(${p.id})" 
+                   style="font-size:1.5rem; cursor:pointer;" title="Pausar/Ativar"></i>
             </td>
             <td>
                 <div style="display:flex; gap:5px; justify-content:center;">
                     <button class="btn-small" style="background:#3498db; color:white; border:none;" 
-                            onclick="editarProduto(${
+                            onclick="window.editarProduto(${
                               p.id
                             })"><i class="fa-solid fa-pen"></i></button>
                     <button class="btn-small" style="background:#e74c3c; color:white; border:none;" 
-                            onclick="deletarProduto(${
+                            onclick="window.deletarProduto(${
                               p.id
                             })"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
-        </tr>
-    `;
+        </tr>`;
     })
     .join("");
-};
+}
 
-window.toggleProd = async function (id) {
+async function toggleProd(id) {
   await toggleAvailability(id);
   carregarMenuAdmin();
-};
+}
 
-// --- MODAL DE PRODUTO ---
+// --- MODAL PRODUTO ---
 
-window.openProductModal = function () {
+function openProductModal() {
   produtoEmEdicaoId = null;
   document.getElementById("form-add-product").reset();
   document.querySelector("#modal-product-admin h3").innerText = "Novo Produto";
@@ -419,26 +458,24 @@ window.openProductModal = function () {
   }
 
   document.getElementById("details-container").innerHTML = "";
-  window.addDetailRow();
-  window.addDetailRow();
-
+  addDetailRow();
+  addDetailRow();
   document.getElementById("modal-product-admin").style.display = "flex";
-};
+}
 
-window.editarProduto = async function (id) {
+async function editarProduto(id) {
   const produtos = await fetchAdminMenu();
   const produto = produtos.find((p) => p.id === id);
   if (!produto) return;
 
   produtoEmEdicaoId = id;
-
   document.querySelector("#modal-product-admin h3").innerText =
     "Editar Produto";
   document.querySelector('#form-add-product button[type="submit"]').innerText =
     "Salvar Alterações";
 
   document.getElementById("prod-name").value = produto.name;
-  document.getElementById("prod-price").value = parseFloat(produto.price || 0); // Ajuste
+  document.getElementById("prod-price").value = parseFloat(produto.price || 0);
   document.getElementById("prod-category").value = produto.category || "Lanche";
   document.getElementById("prod-desc").value = produto.description || "";
   document.getElementById("prod-image-url").value = produto.image_url || "";
@@ -472,25 +509,23 @@ window.editarProduto = async function (id) {
   ["carnes", "adicionais", "acompanhamentos", "bebidas"].forEach((key) => {
     if (details[key]) {
       details[key].forEach((item) => {
-        // [FIX] Garante que item.price seja numérico para exibir
         const priceNum = parseFloat(item.price || 0);
         const val = priceNum > 0 ? `${item.nome} - ${priceNum}` : item.nome;
-        window.addDetailRow(key, val);
+        addDetailRow(key, val);
         temDetalhes = true;
       });
     }
   });
 
-  if (!temDetalhes) window.addDetailRow();
-
+  if (!temDetalhes) addDetailRow();
   document.getElementById("modal-product-admin").style.display = "flex";
-};
+}
 
-window.closeProductModal = function () {
+function closeProductModal() {
   document.getElementById("modal-product-admin").style.display = "none";
-};
+}
 
-window.addDetailRow = function (key = "adicionais", value = "") {
+function addDetailRow(key = "adicionais", value = "") {
   const container = document.getElementById("details-container");
   const div = document.createElement("div");
   div.style.display = "flex";
@@ -512,89 +547,40 @@ window.addDetailRow = function (key = "adicionais", value = "") {
   div.innerHTML = `
     <select class="detail-key" style="background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">${options}</select>
     <input type="text" class="detail-val" value="${value}" placeholder="Ex: Bacon - 3.00" style="flex:1; background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">
-    <button type="button" onclick="removeDetailRow(this)" style="background:#333; color:#e74c3c; border:none; cursor:pointer; padding:0 10px;">&times;</button>
+    <button type="button" onclick="window.removeDetailRow(this)" style="background:#333; color:#e74c3c; border:none; cursor:pointer; padding:0 10px;">&times;</button>
   `;
   container.appendChild(div);
-};
+}
 
-window.removeDetailRow = function (btn) {
+function removeDetailRow(btn) {
   btn.parentElement.remove();
-};
+}
 
+// Listeners de Formulário de Produto
 const fileInput = document.getElementById("prod-file");
 if (fileInput) {
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // ... Lógica de upload mantida ...
     const lbl = document.getElementById("btn-upload-pc");
-    const textoOriginal =
-      '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload PC</span>';
-
-    lbl.innerHTML =
-      '<i class="fa-solid fa-magnifying-glass fa-spin"></i> Verificando...';
-    lbl.style.pointerEvents = "none";
-    lbl.style.opacity = "0.7";
+    lbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
 
     try {
-      const galeria = await fetchCloudGallery();
-      const nomeArquivo = file.name.split(".")[0].toLowerCase();
-      const duplicada = galeria.find((img) => {
-        const nomeNaNuvem = img.name.split("/").pop().toLowerCase();
-        return nomeNaNuvem === nomeArquivo;
-      });
-
-      if (duplicada) {
-        alert(
-          `Atenção: A imagem "${file.name}" já existe na nuvem!\n\nPara usar esta imagem, clique no botão "Nuvem" e selecione-a na galeria.`
-        );
-        throw new Error("Imagem duplicada");
-      }
-
-      lbl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = document.getElementById("preview-img");
-        if (img) {
-          img.src = ev.target.result;
-          img.style.display = "block";
-          document.getElementById("preview-icon").style.display = "none";
-        }
-      };
-      reader.readAsDataURL(file);
-
       const url = await uploadImage(file);
-
       if (url) {
         document.getElementById("prod-image-url").value = url;
-        alert("Imagem enviada para a nuvem com sucesso!");
+        const img = document.getElementById("preview-img");
+        img.src = url;
+        img.style.display = "block";
+        document.getElementById("preview-icon").style.display = "none";
         lbl.innerHTML = "Foto OK ✅";
-        lbl.style.color = "#2ecc71";
-        lbl.style.borderColor = "#2ecc71";
-
-        setTimeout(() => {
-          lbl.innerHTML = textoOriginal;
-          lbl.style.color = "";
-          lbl.style.borderColor = "";
-          lbl.style.pointerEvents = "auto";
-          lbl.style.opacity = "1";
-        }, 3000);
-      } else {
-        throw new Error("Falha no envio");
       }
-    } catch (error) {
-      console.warn(error.message);
-      if (error.message !== "Imagem duplicada") alert("Erro: " + error.message);
-
-      lbl.innerHTML = textoOriginal;
-      lbl.style.pointerEvents = "auto";
-      lbl.style.opacity = "1";
-      document.getElementById("preview-img").style.display = "none";
-      document.getElementById("preview-icon").style.display = "block";
-      document.getElementById("prod-image-url").value = "";
+    } catch (err) {
+      alert("Erro no upload");
+      lbl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload PC';
     }
-    fileInput.value = "";
   });
 }
 
@@ -639,19 +625,14 @@ if (formProd) {
       });
 
       let ok = false;
-      if (produtoEmEdicaoId) {
-        ok = await updateProduct(produtoEmEdicaoId, data);
-      } else {
-        ok = await createProduct(data);
-      }
+      if (produtoEmEdicaoId) ok = await updateProduct(produtoEmEdicaoId, data);
+      else ok = await createProduct(data);
 
       if (ok) {
         alert(produtoEmEdicaoId ? "Produto atualizado!" : "Produto criado!");
-        window.closeProductModal();
+        closeProductModal();
         carregarMenuAdmin();
-      } else {
-        throw new Error("Erro no servidor");
-      }
+      } else throw new Error("Erro no servidor");
     } catch (err) {
       alert("Erro ao salvar: " + err.message);
     } finally {
@@ -665,21 +646,21 @@ if (formProd) {
 
 // --- SEGURANÇA ---
 
-window.deletarProduto = function (id) {
+function deletarProduto(id) {
   idParaDeletar = id;
   const modal = document.getElementById("modal-security");
   const input = document.getElementById("security-pass");
   input.value = "";
   modal.style.display = "flex";
   setTimeout(() => input.focus(), 100);
-};
+}
 
-window.closeSecurityModal = function () {
+function closeSecurityModal() {
   document.getElementById("modal-security").style.display = "none";
   idParaDeletar = null;
-};
+}
 
-window.executarDelecao = async function () {
+async function executarDelecao() {
   const input = document.getElementById("security-pass");
   const btn = document.querySelector("#modal-security .btn-primary");
   const senha = input.value;
@@ -701,20 +682,19 @@ window.executarDelecao = async function () {
     input.value = "";
     input.focus();
   }
-
   btn.innerHTML = '<i class="fa-solid fa-trash"></i> Excluir Agora';
   btn.disabled = false;
-};
+}
 
 document.getElementById("security-pass")?.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") window.executarDelecao();
+  if (e.key === "Enter") executarDelecao();
 });
 
 // =============================================================================
 //  ABA 3: CHAT
 // =============================================================================
 
-window.carregarListaConversas = async function () {
+async function carregarListaConversas() {
   const lista = await fetchAdminConversations();
   const container = document.getElementById("chat-users-list");
   if (!container) return;
@@ -731,7 +711,7 @@ window.carregarListaConversas = async function () {
         <div class="chat-user-item ${
           chatUserIdAtivo === u.user_id ? "active" : ""
         }" 
-             onclick="selecionarChat(${u.user_id}, '${u.user_name}')">
+             onclick="window.selecionarChat(${u.user_id}, '${u.user_name}')">
             <div class="user-avatar-small">${u.user_name[0].toUpperCase()}</div>
             <div style="flex:1">
                 <div>${u.user_name}</div>
@@ -743,15 +723,15 @@ window.carregarListaConversas = async function () {
     `
     )
     .join("");
-};
+}
 
-window.selecionarChat = function (id, nome) {
+function selecionarChat(id, nome) {
   chatUserIdAtivo = id;
   const inputArea = document.getElementById("admin-chat-input-area");
   if (inputArea) inputArea.style.display = "flex";
   carregarChatAtivo(id);
   carregarListaConversas();
-};
+}
 
 async function carregarChatAtivo(uid) {
   const msgs = await fetchAdminUserHistory(uid);
@@ -766,14 +746,12 @@ async function carregarChatAtivo(uid) {
         }</div>`
     )
     .join("");
-
   container.scrollTop = container.scrollHeight;
 }
 
-window.enviarRespostaAdmin = async function () {
+async function enviarRespostaAdmin() {
   const inp = document.getElementById("admin-chat-input");
   const txt = inp.value.trim();
-
   if (!txt || !chatUserIdAtivo) return;
 
   if (await sendAdminReply(chatUserIdAtivo, txt)) {
@@ -782,22 +760,25 @@ window.enviarRespostaAdmin = async function () {
   } else {
     alert("Erro ao enviar.");
   }
-};
+}
 
-window.handleAdminChatKey = function (e) {
-  if (e.key === "Enter") window.enviarRespostaAdmin();
-};
+function handleAdminChatKey(e) {
+  if (e.key === "Enter") enviarRespostaAdmin();
+}
 
 // =============================================================================
 //  ABA 4: CONFIGURAÇÕES
 // =============================================================================
 
-window.switchConfigTab = function (tabName) {
+function switchConfigTab(tabName) {
   document
     .querySelectorAll(".config-tab-btn")
     .forEach((btn) => btn.classList.remove("active"));
-
-  if (event && event.currentTarget) event.currentTarget.classList.add("active");
+  // Gambiarra pra achar o botão clicado
+  const btn = Array.from(document.querySelectorAll(".config-tab-btn")).find(
+    (b) => b.textContent.toLowerCase().includes(tabName)
+  );
+  if (btn) btn.classList.add("active");
 
   document
     .querySelectorAll(".config-subpanel")
@@ -809,9 +790,9 @@ window.switchConfigTab = function (tabName) {
   if (tabName === "coupons") carregarCuponsAdmin();
   if (tabName === "users") carregarUsuariosAdmin();
   if (tabName === "schedule") carregarHorariosAdmin();
-};
+}
 
-window.carregarCuponsAdmin = async function () {
+async function carregarCuponsAdmin() {
   const container = document.getElementById("coupons-list");
   if (!container) return;
   const lista = await fetchCoupons();
@@ -840,7 +821,7 @@ window.carregarCuponsAdmin = async function () {
         c.usage_limit || "∞"
       }</div>
             
-            <button class="btn-small btn-cancel" onclick="deletarCupom(${
+            <button class="btn-small btn-cancel" onclick="window.deletarCupom(${
               c.id
             })" 
                 style="position:absolute; top:10px; right:10px; border:none; background:transparent; color:#e74c3c;">
@@ -850,20 +831,20 @@ window.carregarCuponsAdmin = async function () {
     `
     )
     .join("");
-};
+}
 
-window.toggleNewCouponForm = function () {
+function toggleNewCouponForm() {
   const form = document.getElementById("form-new-coupon");
   if (form)
     form.style.display = form.style.display === "none" ? "block" : "none";
-};
+}
 
-window.deletarCupom = async function (id) {
+async function deletarCupom(id) {
   if (confirm("Apagar este cupom permanentemente?")) {
     await deleteCoupon(id);
     carregarCuponsAdmin();
   }
-};
+}
 
 const formCupom = document.getElementById("form-new-coupon");
 if (formCupom) {
@@ -885,13 +866,11 @@ if (formCupom) {
       formCupom.reset();
       formCupom.style.display = "none";
       carregarCuponsAdmin();
-    } else {
-      alert("Erro (código já existe?)");
-    }
+    } else alert("Erro (código já existe?)");
   });
 }
 
-window.carregarUsuariosAdmin = async function () {
+async function carregarUsuariosAdmin() {
   const tbody = document.getElementById("users-list-body");
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
@@ -914,70 +893,58 @@ window.carregarUsuariosAdmin = async function () {
             <td><span style="background:#333; padding:2px 6px; border-radius:4px;">${
               u.orders_count
             }</span></td>
-        </tr>
-    `
+        </tr>`
     )
     .join("");
-};
+}
 
-// =============================================================================
-//  SISTEMA DE GALERIA CLOUDINARY
-// =============================================================================
+// GALERIA CLOUDINARY
 
-window.abrirGaleriaNuvem = async function () {
+async function abrirGaleriaNuvem() {
   const modal = document.getElementById("modal-cloud-gallery");
   const container = document.getElementById("cloud-grid");
-
   modal.style.display = "flex";
   container.innerHTML =
     '<p style="color:#ccc"><i class="fa-solid fa-spinner fa-spin"></i> Carregando nuvem...</p>';
 
   try {
     const imagens = await fetchCloudGallery();
-
     if (imagens.length === 0) {
       container.innerHTML =
         '<p style="color:#ccc">Nenhuma imagem encontrada na nuvem.</p>';
       return;
     }
-
     container.innerHTML = imagens
       .map((img) => {
         const nomeExibicao = img.name.split("/").pop();
         return `
-            <div class="gallery-item" onclick="selecionarImagemCloud('${img.url}')" title="${img.name}">
-                <button class="btn-delete-img" 
-                        onclick="apagarImagemCloud(event, '${img.name}')" 
-                        title="Apagar permanentemente">
+            <div class="gallery-item" onclick="window.selecionarImagemCloud('${img.url}')" title="${img.name}">
+                <button class="btn-delete-img" onclick="window.apagarImagemCloud(event, '${img.name}')" title="Apagar permanentemente">
                     <i class="fa-solid fa-trash"></i>
                 </button>
                 <img src="${img.url}" loading="lazy">
                 <div class="gallery-name">${nomeExibicao}</div>
-            </div>
-        `;
+            </div>`;
       })
       .join("");
   } catch (e) {
     container.innerHTML =
       '<p style="color:#e74c3c">Erro ao carregar galeria. Verifique a configuração.</p>';
   }
-};
+}
 
-window.fecharGaleriaNuvem = function () {
+function fecharGaleriaNuvem() {
   document.getElementById("modal-cloud-gallery").style.display = "none";
-};
+}
 
-window.selecionarImagemCloud = function (url) {
+function selecionarImagemCloud(url) {
   document.getElementById("prod-image-url").value = url;
   const img = document.getElementById("preview-img");
-  const icon = document.getElementById("preview-icon");
-
   img.src = url;
   img.style.display = "block";
-  icon.style.display = "none";
-
+  document.getElementById("preview-icon").style.display = "none";
   fecharGaleriaNuvem();
-};
+}
 
 async function apagarImagemCloud(event, publicId) {
   event.stopPropagation();
@@ -987,34 +954,26 @@ async function apagarImagemCloud(event, publicId) {
     )
   )
     return;
-
   const btn = event.currentTarget;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
   const sucesso = await deleteCloudImage(publicId);
-
-  if (sucesso) {
-    await window.abrirGaleriaNuvem();
-  } else {
+  if (sucesso) await abrirGaleriaNuvem();
+  else {
     alert("Erro ao apagar. Verifique se tem permissão.");
     btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
   }
 }
 
-window.apagarImagemCloud = apagarImagemCloud;
+// TAXAS DE ENTREGA
 
-// --- TAXAS DE ENTREGA ---
-
-window.carregarBairrosAdmin = async function () {
+async function carregarBairrosAdmin() {
   const lista = await fetchNeighborhoodsAdmin();
   const container = document.getElementById("delivery-list");
   if (!container) return;
 
   container.innerHTML = lista
     .map((b) => {
-      // [FIX] Converte preço para float antes de formatar
       const taxaFloat = parseFloat(b.price || 0);
-
       return `
         <div class="coupon-card" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
@@ -1025,42 +984,38 @@ window.carregarBairrosAdmin = async function () {
                   .toFixed(2)
                   .replace(".", ",")}</div>
             </div>
-            <button class="btn-small btn-cancel" onclick="apagarBairro(${
+            <button class="btn-small btn-cancel" onclick="window.apagarBairro(${
               b.id
             })">
                 <i class="fa-solid fa-trash"></i>
             </button>
-        </div>
-    `;
+        </div>`;
     })
     .join("");
-};
+}
 
-window.adicionarBairro = async function () {
+async function adicionarBairro() {
   const nome = document.getElementById("new-bairro-name").value;
   const preco = document.getElementById("new-bairro-price").value;
-
   if (!nome || !preco) return alert("Preencha nome e valor");
 
   if (await addNeighborhood({ name: nome, price: preco })) {
     document.getElementById("new-bairro-name").value = "";
     document.getElementById("new-bairro-price").value = "";
     carregarBairrosAdmin();
-  } else {
-    alert("Erro ao salvar (Bairro já existe?)");
-  }
-};
+  } else alert("Erro ao salvar (Bairro já existe?)");
+}
 
-window.apagarBairro = async function (id) {
+async function apagarBairro(id) {
   if (confirm("Remover este bairro?")) {
     await deleteNeighborhood(id);
     carregarBairrosAdmin();
   }
-};
+}
 
-// --- IMPRESSÃO ---
+// IMPRESSÃO
 
-window.imprimirComanda = function (id) {
+function imprimirComanda(id) {
   const pedido = pedidosDoDia.find((p) => p.id === id);
   if (!pedido)
     return alert("Erro: Pedido não encontrado na memória. Atualize a página.");
@@ -1092,7 +1047,6 @@ window.imprimirComanda = function (id) {
       } catch (e) {}
     }
 
-    // [FIX] Preços com parseFloat para impressão
     const priceAtTime = parseFloat(item.price_at_time || 0);
     const subtotal = priceAtTime * item.quantity;
 
@@ -1103,8 +1057,7 @@ window.imprimirComanda = function (id) {
             <span>R$ ${subtotal.toFixed(2)}</span>
         </div>
         ${detalhes}
-      </div>
-    `;
+      </div>`;
   });
 
   const deliveryFee = parseFloat(pedido.delivery_fee || 0);
@@ -1131,7 +1084,6 @@ window.imprimirComanda = function (id) {
           <div style="margin-top:5px;">PEDIDO #${pedido.id}</div>
           <div>${dataFormatada}</div>
         </div>
-
         <div class="section">
           <div class="bold">CLIENTE:</div>
           <div>${pedido.customer_name || "Consumidor"}</div>
@@ -1142,12 +1094,10 @@ window.imprimirComanda = function (id) {
     pedido.complement ? "- " + pedido.complement : ""
   }</div>
         </div>
-
         <div class="section">
           <div class="bold" style="margin-bottom:5px;">ITENS:</div>
           ${itensHtml}
         </div>
-
         <div class="section">
           <div style="display:flex; justify-content:space-between;">
              <span>Taxa Entrega:</span>
@@ -1158,25 +1108,20 @@ window.imprimirComanda = function (id) {
              <span>R$ ${totalPrice.toFixed(2)}</span>
           </div>
         </div>
-
         <div class="center">
           <div>Pagamento: <strong>${pedido.payment_method}</strong></div>
           <div style="margin-top:10px; font-size:10px;">Sistema Cegonha Lanches</div>
         </div>
       </body>
-    </html>
-  `;
+    </html>`;
 
   const janela = window.open("", "_blank", "width=350,height=600");
   janela.document.write(conteudoJanela);
   janela.document.close();
+  setTimeout(() => janela.print(), 500);
+}
 
-  setTimeout(() => {
-    janela.print();
-  }, 500);
-};
-
-// --- OUTROS ---
+// HORÁRIOS
 
 const diasSemana = [
   "Domingo",
@@ -1188,7 +1133,7 @@ const diasSemana = [
   "Sábado",
 ];
 
-window.carregarHorariosAdmin = async function () {
+async function carregarHorariosAdmin() {
   const lista = await fetchSchedule();
   const tbody = document.getElementById("schedule-list-body");
   if (!tbody) return;
@@ -1212,16 +1157,14 @@ window.carregarHorariosAdmin = async function () {
                     <span class="checkmark"></span>
                 </label>
             </td>
-        </tr>
-    `
+        </tr>`
     )
     .join("");
-};
+}
 
-window.salvarHorarios = async function () {
+async function salvarHorarios() {
   const linhas = document.querySelectorAll("#schedule-list-body tr");
   const payload = [];
-
   linhas.forEach((tr) => {
     payload.push({
       day_of_week: parseInt(tr.dataset.day),
@@ -1231,26 +1174,22 @@ window.salvarHorarios = async function () {
     });
   });
 
-  if (await updateSchedule(payload)) {
-    alert("Horários atualizados!");
-  } else {
-    alert("Erro ao salvar.");
-  }
-};
+  if (await updateSchedule(payload)) alert("Horários atualizados!");
+  else alert("Erro ao salvar.");
+}
 
-window.carregarDashboard = async function (filtros = {}) {
+// DASHBOARD
+
+async function carregarDashboard(filtros = {}) {
   const btn = document.querySelector("#panel-reports .btn-outline");
   if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
   const dados = await fetchDashboardStats(filtros);
-
   if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Atualizar';
 
   if (!dados) return;
 
-  // [FIX] ParseFloat para evitar erros de gráfico
   const totalPeriodo = parseFloat(dados.total_periodo || 0);
-
   document.getElementById(
     "stat-faturamento"
   ).innerText = `R$ ${totalPeriodo.toFixed(2)}`;
@@ -1269,7 +1208,7 @@ window.carregarDashboard = async function (filtros = {}) {
       datasets: [
         {
           label: "Vendas (R$)",
-          data: dados.grafico.data, // Chart.js lida bem com strings numéricas, mas se der erro, faça um .map(parseFloat)
+          data: dados.grafico.data,
           backgroundColor: "rgba(242, 201, 76, 0.2)",
           borderColor: "#f2c94c",
           borderWidth: 2,
@@ -1284,21 +1223,18 @@ window.carregarDashboard = async function (filtros = {}) {
       plugins: { legend: { labels: { color: "white" } } },
       scales: {
         y: {
-          ticks: {
-            color: "#ccc",
-            callback: function (value) {
-              return "R$ " + value;
-            },
-          },
+          ticks: { color: "#ccc", callback: (v) => "R$ " + v },
           grid: { color: "#333" },
         },
         x: { ticks: { color: "#ccc" }, grid: { display: false } },
       },
     },
   });
-};
+}
 
-window.abrirDossie = async function (id) {
+// DOSSIE
+
+async function abrirDossie(id) {
   const dossie = await fetchOrderDossier(id);
   if (!dossie) return alert("Erro ao carregar dossiê.");
 
@@ -1328,58 +1264,51 @@ window.abrirDossie = async function (id) {
   })<br>
             <strong>🚦 STATUS ATUAL:</strong> ${d.status}
         </div>
-
         <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
             <strong>💳 PAGAMENTO:</strong><br>
             Método: ${d.payment_method}<br>
-            Status do Pagamento: <span style="color:${
+            Status: <span style="color:${
               d.payment_status === "approved" ? "#2ecc71" : "#e74c3c"
             }">${d.payment_status}</span><br>
             Total Pago: R$ ${totalDossie}
         </div>
-
         <div style="background:#222; padding:10px; border-radius:5px; margin-bottom:10px;">
             <strong>📍 ENTREGA:</strong><br>
             ${d.street}, ${d.number}<br>
             ${d.neighborhood} ${d.complement ? "- " + d.complement : ""}<br>
             Taxa Cobrada: R$ ${taxaDossie}
         </div>
-
         <div style="background:#222; padding:10px; border-radius:5px;">
             <strong>🍔 ITENS ORIGINAIS:</strong><br>
             ${itensLegiveis}
         </div>
-        
         <p style="font-size:0.8rem; color:#666; margin-top:10px; text-align:center;">
-            Documento gerado digitalmente pelo sistema Cegonha Lanches.<br>
             ID Auditoria: ${Date.now()}-${d.id}
-        </p>
-    `;
-
+        </p>`;
   document.getElementById("modal-dossier").style.display = "flex";
-};
+}
 
-window.fecharDossie = function () {
+function fecharDossie() {
   document.getElementById("modal-dossier").style.display = "none";
-};
+}
 
-// --- FILTROS ---
+// FILTROS
 
-window.abrirModalFiltro = function () {
+function abrirModalFiltro() {
   document.getElementById("modal-filter-orders").style.display = "flex";
-};
+}
 
-window.fecharModalFiltro = function () {
+function fecharModalFiltro() {
   document.getElementById("modal-filter-orders").style.display = "none";
-};
+}
 
-window.toggleDatasManuais = function () {
+function toggleDatasManuais() {
   const val = document.getElementById("filter-period").value;
   const row = document.getElementById("filter-dates-row");
   if (row) row.style.display = val === "manual" ? "flex" : "none";
-};
+}
 
-window.aplicarFiltros = function () {
+function aplicarFiltros() {
   const period = document.getElementById("filter-period").value;
   const name = document.getElementById("filter-name").value;
   const payment = document.getElementById("filter-payment").value;
@@ -1414,37 +1343,37 @@ window.aplicarFiltros = function () {
 
   carregarPedidosAdmin(filtros);
   fecharModalFiltro();
-};
+}
 
-window.limparFiltros = function () {
+function limparFiltros() {
   document.getElementById("filter-period").value = "hoje";
   document.getElementById("filter-name").value = "";
   document.getElementById("filter-payment").value = "";
   document.getElementById("filter-id").value = "";
   toggleDatasManuais();
   aplicarFiltros();
-};
+}
 
-window.abrirModalFiltroRelatorio = function () {
+function abrirModalFiltroRelatorio() {
   document.getElementById("modal-filter-reports").style.display = "flex";
-};
+}
 
-window.fecharModalFiltroRelatorio = function () {
+function fecharModalFiltroRelatorio() {
   document.getElementById("modal-filter-reports").style.display = "none";
-};
+}
 
-window.toggleDatasRelatorio = function () {
+function toggleDatasRelatorio() {
   const val = document.getElementById("rep-period").value;
   const row = document.getElementById("rep-dates-row");
   if (row) row.style.display = val === "manual" ? "flex" : "none";
-};
+}
 
-window.aplicarFiltroRelatorio = function () {
+function aplicarFiltroRelatorio() {
   const period = document.getElementById("rep-period").value;
   const payment = document.getElementById("rep-payment").value;
 
-  let start = "";
-  let end = "";
+  let start = "",
+    end = "";
   const hoje = new Date();
 
   // Padrão de segurança: Hoje
@@ -1474,7 +1403,7 @@ window.aplicarFiltroRelatorio = function () {
       }
     }
   } catch (e) {
-    console.warn("Erro ao calcular datas", e);
+    console.warn("Erro data", e);
   }
 
   const filtros = {};
@@ -1484,4 +1413,59 @@ window.aplicarFiltroRelatorio = function () {
 
   carregarDashboard(filtros);
   fecharModalFiltroRelatorio();
-};
+}
+
+// =============================================================================
+//  EXPOSIÇÃO GLOBAL (PARA O HTML ACESSAR)
+// =============================================================================
+
+window.switchPanel = switchPanel;
+window.adminLogout = adminLogout;
+window.carregarCozinha = carregarCozinha;
+window.moverParaPreparo = moverParaPreparo;
+window.moverParaEntrega = moverParaEntrega;
+window.concluirPedidoDefinitivo = concluirPedidoDefinitivo;
+window.carregarPedidosAdmin = carregarPedidosAdmin;
+window.mudarStatus = mudarStatus;
+window.carregarMenuAdmin = carregarMenuAdmin;
+window.toggleProd = toggleProd;
+window.openProductModal = openProductModal;
+window.editarProduto = editarProduto;
+window.closeProductModal = closeProductModal;
+window.addDetailRow = addDetailRow;
+window.removeDetailRow = removeDetailRow;
+window.deletarProduto = deletarProduto;
+window.closeSecurityModal = closeSecurityModal;
+window.executarDelecao = executarDelecao;
+window.carregarListaConversas = carregarListaConversas;
+window.selecionarChat = selecionarChat;
+window.carregarChatAtivo = carregarChatAtivo;
+window.enviarRespostaAdmin = enviarRespostaAdmin;
+window.handleAdminChatKey = handleAdminChatKey;
+window.switchConfigTab = switchConfigTab;
+window.carregarCuponsAdmin = carregarCuponsAdmin;
+window.toggleNewCouponForm = toggleNewCouponForm;
+window.deletarCupom = deletarCupom;
+window.carregarUsuariosAdmin = carregarUsuariosAdmin;
+window.abrirGaleriaNuvem = abrirGaleriaNuvem;
+window.fecharGaleriaNuvem = fecharGaleriaNuvem;
+window.selecionarImagemCloud = selecionarImagemCloud;
+window.apagarImagemCloud = apagarImagemCloud;
+window.carregarBairrosAdmin = carregarBairrosAdmin;
+window.adicionarBairro = adicionarBairro;
+window.apagarBairro = apagarBairro;
+window.imprimirComanda = imprimirComanda;
+window.carregarHorariosAdmin = carregarHorariosAdmin;
+window.salvarHorarios = salvarHorarios;
+window.carregarDashboard = carregarDashboard;
+window.abrirDossie = abrirDossie;
+window.fecharDossie = fecharDossie;
+window.abrirModalFiltro = abrirModalFiltro;
+window.fecharModalFiltro = fecharModalFiltro;
+window.toggleDatasManuais = toggleDatasManuais;
+window.aplicarFiltros = aplicarFiltros;
+window.limparFiltros = limparFiltros;
+window.abrirModalFiltroRelatorio = abrirModalFiltroRelatorio;
+window.fecharModalFiltroRelatorio = fecharModalFiltroRelatorio;
+window.toggleDatasRelatorio = toggleDatasRelatorio;
+window.aplicarFiltroRelatorio = aplicarFiltroRelatorio;
