@@ -1046,7 +1046,7 @@ function initContactForm() {
     }
 
     if (res.success) {
-      if (res.redirectUrl) {
+      /*if (res.redirectUrl) {
         showToast("Redirecionando para pagamento...", "success");
 
         // Aguarda 1s para o usuário ler e abre o Mercado Pago
@@ -1054,7 +1054,7 @@ function initContactForm() {
           window.location.href = res.redirectUrl;
         }, 1000);
         return; // Para aqui, não reseta o form ainda
-      }
+      }*/
 
       if (!deveAbrirZap)
         showToast(`Pedido #${res.orderId} enviado com sucesso!`);
