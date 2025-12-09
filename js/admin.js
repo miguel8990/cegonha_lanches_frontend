@@ -26,6 +26,7 @@ import {
   fetchOrderDossier,
 } from "./api.js";
 import { getSession, clearSession } from "./auth.js";
+import { showToast } from "./main.js";
 
 // --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
@@ -42,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Verifica se é admin
   const { user } = getSession();
   if (!user.role || (user.role !== "admin" && user.role !== "super_admin")) {
-    alert("Acesso negado.");
+    showToast("Acesso negado.", "error");
     window.location.href = "index.html";
     return;
   }
@@ -578,7 +579,7 @@ if (fileInput) {
         lbl.innerHTML = "Foto OK ✅";
       }
     } catch (err) {
-      alert("Erro no upload");
+      showToast("Erro no upload", "error");
       lbl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload PC';
     }
   });
@@ -629,12 +630,15 @@ if (formProd) {
       else ok = await createProduct(data);
 
       if (ok) {
-        alert(produtoEmEdicaoId ? "Produto atualizado!" : "Produto criado!");
+        showToast(
+          produtoEmEdicaoId ? "Produto atualizado!" : "Produto criado!",
+          "success"
+        );
         closeProductModal();
         carregarMenuAdmin();
       } else throw new Error("Erro no servidor");
     } catch (err) {
-      alert("Erro ao salvar: " + err.message);
+      showToast("Erro ao salvar: " + err.message, "error");
     } finally {
       btn.innerText = produtoEmEdicaoId
         ? "Salvar Alterações"
@@ -665,7 +669,7 @@ async function executarDelecao() {
   const btn = document.querySelector("#modal-security .btn-primary");
   const senha = input.value;
 
-  if (!senha) return alert("Digite a senha mestra.");
+  if (!senha) return showToast("Digite a senha mestra.", "warning");
   if (!idParaDeletar) return;
 
   btn.innerHTML = "Verificando...";
@@ -674,11 +678,11 @@ async function executarDelecao() {
   const result = await deleteProduct(idParaDeletar, senha);
 
   if (result === true) {
-    alert("Produto excluído!");
+    showToast("Produto excluído!", "success");
     closeSecurityModal();
     carregarMenuAdmin();
   } else {
-    alert(result.error || "Senha incorreta ou erro.");
+    showToast(result.error || "Senha incorreta ou erro.", "error");
     input.value = "";
     input.focus();
   }
@@ -758,7 +762,7 @@ async function enviarRespostaAdmin() {
     inp.value = "";
     carregarChatAtivo(chatUserIdAtivo);
   } else {
-    alert("Erro ao enviar.");
+    showToast("Erro ao enviar.", "error");
   }
 }
 
@@ -862,11 +866,11 @@ if (formCupom) {
     };
 
     if (await createCoupon(data)) {
-      alert("Cupom criado!");
+      showToast("Cupom criado!", "success");
       formCupom.reset();
       formCupom.style.display = "none";
       carregarCuponsAdmin();
-    } else alert("Erro (código já existe?)");
+    } else showToast("Erro (código já existe?)", "error");
   });
 }
 
@@ -959,7 +963,7 @@ async function apagarImagemCloud(event, publicId) {
   const sucesso = await deleteCloudImage(publicId);
   if (sucesso) await abrirGaleriaNuvem();
   else {
-    alert("Erro ao apagar. Verifique se tem permissão.");
+    showToast("Erro ao apagar. Verifique se tem permissão.", "error");
     btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
   }
 }
@@ -997,13 +1001,13 @@ async function carregarBairrosAdmin() {
 async function adicionarBairro() {
   const nome = document.getElementById("new-bairro-name").value;
   const preco = document.getElementById("new-bairro-price").value;
-  if (!nome || !preco) return alert("Preencha nome e valor");
+  if (!nome || !preco) return showToast("Preencha nome e valor", "warning");
 
   if (await addNeighborhood({ name: nome, price: preco })) {
     document.getElementById("new-bairro-name").value = "";
     document.getElementById("new-bairro-price").value = "";
     carregarBairrosAdmin();
-  } else alert("Erro ao salvar (Bairro já existe?)");
+  } else showToast("Erro ao salvar (Bairro já existe?)", "error");
 }
 
 async function apagarBairro(id) {
@@ -1018,7 +1022,10 @@ async function apagarBairro(id) {
 function imprimirComanda(id) {
   const pedido = pedidosDoDia.find((p) => p.id === id);
   if (!pedido)
-    return alert("Erro: Pedido não encontrado na memória. Atualize a página.");
+    return showToast(
+      "Erro: Pedido não encontrado na memória. Atualize a página.",
+      "error"
+    );
 
   const dataObj = new Date(pedido.date_created);
   const dataFormatada =
@@ -1174,8 +1181,9 @@ async function salvarHorarios() {
     });
   });
 
-  if (await updateSchedule(payload)) alert("Horários atualizados!");
-  else alert("Erro ao salvar.");
+  if (await updateSchedule(payload))
+    showToast("Horários atualizados!", "success");
+  else showToast("Erro ao salvar.", "error");
 }
 
 // DASHBOARD
@@ -1236,7 +1244,7 @@ async function carregarDashboard(filtros = {}) {
 
 async function abrirDossie(id) {
   const dossie = await fetchOrderDossier(id);
-  if (!dossie) return alert("Erro ao carregar dossiê.");
+  if (!dossie) return showToast("Erro ao carregar dossiê.", "error");
 
   const container = document.getElementById("dossier-body");
   const d = dossie;

@@ -1,6 +1,6 @@
 // site/js/auth.js
 import { loginUser } from "./api.js";
-import { openAuthModal } from "./main.js";
+import { openAuthModal, showToast } from "./main.js";
 
 // ==========================================
 //  SISTEMA DE COOKIES (Sessão Robusta)
@@ -73,6 +73,21 @@ export function clearSession() {
   localStorage.removeItem("user");
 }
 
+export function logout() {
+  // 1. Limpa todos os dados da sessão
+  clearSession();
+
+  // 2. Opcional: Feedback visual antes de recarregar (se a função existir globalmente)
+  if (window.showToast) {
+    window.showToast("Sessão terminada.", "info");
+  }
+
+  // 3. Redireciona para a página inicial (ou login) para "limpar" o estado visual da aplicação
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 1000); // Pequeno delay para o utilizador perceber que saiu
+}
+
 export function getToken() {
   return getCookie("auth_token");
 }
@@ -135,7 +150,7 @@ if (form) {
       saveSession(res.token, res.user);
       window.location.href = "index.html";
     } else {
-      alert("Erro: " + res.error);
+      showToast("Erro: " + res.error);
       btn.innerText = txt;
       btn.disabled = false;
     }
@@ -166,22 +181,56 @@ export function fecharModalLogin() {
 }
 
 // Função para enviar o pedido
+// site/js/auth.js
+
+// ... (resto do arquivo acima)
+
 export async function pedirMagicLink(event) {
   event.preventDefault();
   const email = document.getElementById("magic-email").value;
+  const btn = event.target.querySelector("button");
+  const txtOriginal = btn.innerText;
 
-  const res = await fetch(
-    "http://localhost:5000/api/auth/magic-login/request",
-    {
+  btn.innerText = "Enviando...";
+  btn.disabled = true;
+
+  try {
+    // Detecta URL dinamicamente (igual ao api.js) para não quebrar em produção
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    const baseUrl = isLocalhost
+      ? "http://localhost:5000/api"
+      : "https://seu-backend.com/api";
+
+    const res = await fetch(`${baseUrl}/auth/magic-login/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
-    }
-  );
+    });
 
-  if (res.ok) {
-    alert("Verifique seu e-mail! Clique no link enviado para entrar.");
-  } else {
-    alert("Erro ao enviar link.");
+    const data = await res.json(); // [CORREÇÃO] Lê a resposta do servidor
+
+    if (res.ok) {
+      showToast(
+        "Verifique seu e-mail! Clique no link enviado para entrar.",
+        "success"
+      );
+    } else {
+      // [CORREÇÃO] Mostra o erro real (Ex: "Email não cadastrado" ou "Informe seu nome")
+      showToast(data.error || "Erro ao enviar link.", "error");
+
+      // Se o erro for de usuário inexistente, sugere ir para o cadastro
+      if (data.error && data.error.includes("Nome")) {
+        // Opcional: Trocar para a aba de cadastro automaticamente
+        if (window.switchAuthTab) window.switchAuthTab("register");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    showToast("Erro de conexão com o servidor.", "error");
+  } finally {
+    btn.innerText = txtOriginal;
+    btn.disabled = false;
   }
 }

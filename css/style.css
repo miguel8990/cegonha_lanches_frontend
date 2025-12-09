@@ -1713,24 +1713,38 @@ footer {
   background: #1a1a1a;
 }
 .auth-tabs {
-  display: flex;
+  display: flex; /* Coloca um ao lado do outro */
+  justify-content: space-between; /* Espalha eles */
+  gap: 5px; /* Espacinho entre eles */
   margin-bottom: 20px;
-  border-bottom: 1px solid #333;
+  width: 100%;
 }
+
 .tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  color: #666;
-  padding: 10px;
-  font-size: 1rem;
+  flex: 1; /* Faz todos terem a mesma largura (divisão justa) */
+  white-space: nowrap; /* 🔥 O PULO DO GATO: Proíbe quebrar linha */
+  padding: 10px 0; /* Menos padding lateral para caber */
+  font-size: 0.85rem; /* Fonte um pouco menor para garantir */
+  text-align: center;
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  border-radius: 5px;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  color: #ccc;
 }
+
 .tab-btn.active {
-  color: var(--color-gold);
-  border-bottom-color: var(--color-gold);
-  font-weight: bold;
+  background-color: var(--color-gold) !important; /* Fundo Dourado */
+  color: #000 !important; /* 🔥 Texto PRETO para dar leitura */
+  border-color: var(--color-gold);
+  font-weight: 800; /* Texto bem grosso */
+  z-index: 2;
+  opacity: 1;
 }
 .full-width {
   width: 100%;
@@ -2529,4 +2543,42 @@ select#bairro option {
   color: var(--color-gold);
   font-weight: bold;
   font-size: 1rem;
+}
+/* --- 2. CORREÇÃO DOS ÍCONES (Envelope e Cadeado) --- */
+.input-icon {
+  position: relative; /* Define o limite para o ícone não fugir */
+  width: 100%;
+}
+
+.input-icon i {
+  position: absolute; /* Solto dentro do pai relativo */
+  left: 15px; /* Distância fixa da esquerda */
+  top: 50%; /* Meio da altura */
+  transform: translateY(-50%); /* Centraliza exato no meio vertical */
+  color: var(--color-gold);
+  pointer-events: none; /* Permite clicar "através" do ícone */
+  font-size: 1rem;
+  z-index: 2; /* Garante que fique em cima do input */
+}
+
+.input-icon input {
+  width: 100%;
+  padding: 12px;
+  padding-left: 45px; /* 🔥 IMPORTANTE: Empurra o texto para não ficar em cima do ícone */
+  background-color: var(--color-black);
+  border: 1px solid #444;
+  border-radius: 5px;
+  color: white;
+  box-sizing: border-box; /* Garante que o padding não estoure a largura */
+}
+
+.input-icon input:focus {
+  border-color: var(--color-gold);
+  outline: none;
+}
+
+#bebidas-grid .menu-img {
+  object-fit: contain; /* Mostra a lata inteira sem cortar */
+  padding: 10px; /* Um respiro */
+  background-color: #222; /* Fundo escuro para completar o espaço */
 }

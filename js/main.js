@@ -15,6 +15,7 @@ import {
   fetchPublicCoupons,
   fetchNeighborhoodsPublic,
   fetchSchedule,
+  fetchBebidas,
 } from "./api.js";
 import {
   checkMagicLinkReturn,
@@ -28,6 +29,7 @@ import {
 // Estado Global
 let carrinho = [];
 let menuGlobal = [];
+let produtoSelecionado = null; //
 let itemEmPersonalizacao = null;
 let cuponsDisponiveis = [];
 let cupomSelecionado = null; // Objeto do cupom
@@ -35,7 +37,7 @@ let taxaEntregaAtual = 0;
 let lojaAberta = false;
 let horariosGlobal = [];
 
-window.showToast = function (message, type = "info") {
+export function showToast(message, type = "info") {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
@@ -56,11 +58,15 @@ window.showToast = function (message, type = "info") {
   setTimeout(() => {
     toast.remove();
   }, 4300);
-};
+}
+
+// 2. Garante que ela também exista no window (para compatibilidade com HTML e códigos antigos)
+window.showToast = showToast;
 
 document.addEventListener("DOMContentLoaded", () => {
   initMenu();
   initCombos();
+  initBebidas();
   carregarCarrinhoLocal();
   initContactForm();
   initMobileMenu();
@@ -205,9 +211,9 @@ window.toggleCart = toggleCart;
 window.removerItem = removerItem;
 window.finalizarPedido = finalizarPedido;
 window.alterarQuantidade = alterarQuantidade;
-window.adicionarComQuantidade = adicionarComQuantidade;
+
 window.alterarQuantidadeCarrinho = alterarQuantidadeCarrinho;
-window.verificarOpcoes = verificarOpcoes;
+
 window.fecharModal = fecharModal;
 window.adicionarItemDoModal = adicionarItemDoModal;
 window.atualizarSelecaoModal = atualizarSelecaoModal;
@@ -287,7 +293,7 @@ function checkLoginState() {
 
 export function openAuthModal() {
   document.getElementById("modal-auth").style.display = "flex";
-  switchAuthTab("login");
+  switchAuthTab("acesso");
 }
 
 function closeAuthModal() {
@@ -320,30 +326,38 @@ function closeAuthModal() {
   }
 }
 
+// site/js/main.js
+
 function switchAuthTab(tab) {
+  // 1. Pega os formulários
   const magicForm = document.getElementById("form-magic-login");
   const passForm = document.getElementById("form-password-login");
   const regForm = document.getElementById("form-register");
-  const btns = document.querySelectorAll(".tab-btn");
 
-  if (tab === "login") {
-    // Por padrão, mostra o Magic Link ao abrir a aba Login
+  // 2. Pega os botões das abas
+  const btns = document.querySelectorAll(".auth-tabs .tab-btn");
+
+  // 3. Reseta tudo (esconde forms e remove classe active)
+  magicForm.style.display = "none";
+  passForm.style.display = "none";
+  regForm.style.display = "none";
+  btns.forEach((btn) => btn.classList.remove("active"));
+
+  // 4. Ativa a aba correta
+  if (tab === "acesso") {
     magicForm.style.display = "block";
-    passForm.style.display = "none";
-    regForm.style.display = "none";
-
     if (btns[0]) btns[0].classList.add("active");
-    if (btns[1]) btns[1].classList.remove("active");
-  } else {
-    // Aba Cadastro
-    magicForm.style.display = "none";
-    passForm.style.display = "none";
-    regForm.style.display = "block";
-
-    if (btns[0]) btns[0].classList.remove("active");
+  } else if (tab === "login") {
+    passForm.style.display = "block";
     if (btns[1]) btns[1].classList.add("active");
+  } else if (tab === "register") {
+    regForm.style.display = "block";
+    if (btns[2]) btns[2].classList.add("active");
   }
 }
+
+// Não esqueça de garantir que ela está disponível globalmente:
+window.switchAuthTab = switchAuthTab;
 
 function initAuthModalLogic() {
   // 1. Magic Link Submit
@@ -590,47 +604,36 @@ async function initCombos() {
   }
 }
 
+// site/js/main.js
+
+async function initBebidas() {
+  const grid = document.getElementById("bebidas-grid");
+  if (!grid) return;
+
+  try {
+    const itens = await fetchBebidas();
+
+    // Adiciona ao menu global para o carrinho funcionar
+    itens.forEach((b) => {
+      if (!menuGlobal.find((m) => m.id === b.id)) menuGlobal.push(b);
+    });
+
+    if (itens.length === 0) {
+      grid.innerHTML = "<p>Nenhuma bebida cadastrada.</p>";
+      return;
+    }
+
+    // Usa a mesma função de card dos lanches (createMenuItemCard)
+    grid.innerHTML = itens.map(createMenuItemCard).join("");
+
+    // Atualiza os botões (caso já tenha algo no carrinho)
+    atualizarBotoesMenu();
+  } catch (e) {
+    grid.innerHTML = "<p>Erro ao carregar bebidas</p>";
+  }
+}
+
 // --- 4. MODAL DE PRODUTO ---
-
-function verificarOpcoes(itemId, qtdId) {
-  // Garante que itemId seja comparado como número ou string corretamente
-  const produto = menuGlobal.find((p) => p.id == itemId);
-
-  if (!produto) {
-    console.error("Produto não encontrado no menu global:", itemId);
-    showToast("Erro ao carregar produto. Tente recarregar a página.");
-    return;
-  }
-
-  const qtdDisplay = document.getElementById(`qty-${qtdId}`);
-  // Proteção caso o contador não exista (ex: em layouts diferentes)
-  const quantidade = qtdDisplay ? parseInt(qtdDisplay.innerText) : 1;
-
-  const d = produto.details || {};
-
-  const temOpcoes =
-    (d.carnes && d.carnes.length > 0) ||
-    (d.adicionais && d.adicionais.length > 0) ||
-    (d.acompanhamentos && d.acompanhamentos.length > 0) ||
-    (d.bebidas && d.bebidas.length > 0);
-
-  if (temOpcoes) {
-    abrirModalProduto(produto, quantidade, qtdId);
-  } else {
-    adicionarComQuantidade(produto.name, produto.price, itemId);
-  }
-}
-
-function adicionarComQuantidade(nome, preco, idVisual) {
-  const display = document.getElementById(`qty-${idVisual}`);
-  const qtd = parseInt(display.innerText);
-  const produto = menuGlobal.find((p) => p.id == idVisual);
-
-  for (let i = 0; i < qtd; i++) {
-    adicionarAoCarrinho(nome, preco, { productId: produto.id, details: {} });
-  }
-  display.innerText = "1";
-}
 
 function abrirModalProduto(produto, qtd, qtdId) {
   const modal = document.getElementById("modal-personalizacao");
@@ -1963,3 +1966,65 @@ function toggleLoginMode(mode) {
 // ...
 // Lembre de exportar a função para o HTML usar:
 window.toggleLoginMode = toggleLoginMode;
+
+// site/js/main.js - Substitua o final do arquivo (Funções globais) por isto:
+
+// --- LÓGICA DE ADIÇÃO AO CARRINHO (Unificada) ---
+
+window.verificarOpcoes = function (id) {
+  // 1. Busca o produto no menu global (Lanches ou Bebidas)
+  // Usa '==' para funcionar se id for string ou numero
+  let produto = menuGlobal.find((p) => p.id == id);
+
+  if (!produto) {
+    console.error("Produto não encontrado ID:", id);
+    return showToast("Erro ao adicionar produto.", "error");
+  }
+
+  // Define globalmente
+  produtoSelecionado = produto;
+
+  // 2. Verifica se o produto tem opções de personalização no JSON
+  const d = produto.details || {};
+  const temOpcoes =
+    (d.carnes && d.carnes.length > 0) ||
+    (d.adicionais && d.adicionais.length > 0) ||
+    (d.acompanhamentos && d.acompanhamentos.length > 0) ||
+    (d.bebidas && d.bebidas.length > 0); // Bebidas dentro de combos, não a bebida avulsa
+
+  if (temOpcoes) {
+    // Se tem opções (ex: Lanche), abre o modal
+    const safeId = getSafeId(produto.name);
+    // Pega a quantidade que estava no card (input +/-) ou assume 1
+    const qtdDisplay = document.getElementById(`qty-${safeId}`);
+    const qtd = qtdDisplay ? parseInt(qtdDisplay.innerText) : 1;
+
+    abrirModalProduto(produto, qtd, safeId);
+  } else {
+    // 3. Se NÃO tem opções (ex: Bebida simples), adiciona direto
+
+    // Pega a quantidade do card
+    const safeId = getSafeId(produto.name);
+    const qtdDisplay = document.getElementById(`qty-${safeId}`);
+    const quantidade = qtdDisplay ? parseInt(qtdDisplay.innerText) : 1;
+
+    const dadosExtras = {
+      productId: produto.id,
+      details: { obs: "" }, // Detalhes vazios
+    };
+
+    // Adiciona N vezes ao carrinho
+    // (Poderiamos mudar a lógica do carrinho para aceitar qtd direta, mas para manter compatibilidade:)
+    for (let i = 0; i < quantidade; i++) {
+      adicionarAoCarrinho(produto.name, produto.price, dadosExtras);
+    }
+
+    // Reseta o contador visual para 1
+    if (qtdDisplay) qtdDisplay.innerText = "1";
+  }
+};
+
+// Removemos a função 'adicionarComQuantidade' antiga pois ela estava quebrada e redundante.
+// A lógica agora é feita via 'adicionarItemDoModal' (para lanches) ou direta no 'verificarOpcoes' (para bebidas).
+
+window.adicionarAoCarrinho = adicionarAoCarrinho; // Garante exportação

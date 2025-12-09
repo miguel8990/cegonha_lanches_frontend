@@ -1,6 +1,7 @@
 // site/js/api.js
 
 import { getToken } from "./auth.js";
+import { showToast } from "./main.js";
 
 // [CORREÇÃO 1] Configuração Dinâmica de Ambiente
 // Detecta se o site está rodando localmente ou em produção
@@ -120,6 +121,14 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       body: JSON.stringify(payload),
     });
 
+    if (response.status === 401) {
+      showToast(
+        "Sua sessão expirou. Por favor, faça login novamente.",
+        "warning"
+      );
+      import("./auth.js").then((module) => module.logout()); // Chama logout dinamicamente
+      return { success: false, error: "Sessão expirada" };
+    }
     // CORREÇÃO: Lemos o JSON apenas UMA vez aqui
     const dados = await response.json();
 
@@ -679,3 +688,19 @@ export async function fetchAdminOrders(filtros = {}) {
     return [];
   }
 }
+
+// site/js/api.js
+
+// ... (logo após fetchCombos) ...
+
+export const fetchBebidas = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/menu/bebidas`);
+    if (!response.ok) throw new Error("Erro na API");
+    const dados = await response.json();
+    return dados.map(adaptarProduto);
+  } catch (error) {
+    console.error("Erro Bebidas:", error);
+    return [];
+  }
+};

@@ -165,6 +165,18 @@
         </div>
       </section>
 
+      <section id="bebidas" class="menu-section">
+        <div class="container">
+          <h2 class="section-title">
+            Bebidas <span class="text-red">Geladas</span> 🥤
+          </h2>
+
+          <div id="bebidas-grid" class="grid-container">
+            <div class="loading-spinner">Carregando bebidas...</div>
+          </div>
+        </div>
+      </section>
+
       <section id="contact">
         <div class="container">
           <h2 class="section-title">
@@ -560,8 +572,17 @@
       <div class="modal-content auth-content">
         <button class="close-modal" onclick="closeAuthModal()">&times;</button>
 
+        <span class="close-modal" onclick="fecharModalAuth()">&times;</span>
+
+        <div style="text-align: center; margin-bottom: 20px">
+          <img src="assets/logo2.webp" alt="Logo" style="height: 60px" />
+        </div>
+
         <div class="auth-tabs">
-          <button class="tab-btn active" onclick="switchAuthTab('login')">
+          <button class="tab-btn active" onclick="switchAuthTab('acesso')">
+            Acesso Rápido
+          </button>
+          <button class="tab-btn" onclick="switchAuthTab('login')">
             Login
           </button>
           <button class="tab-btn" onclick="switchAuthTab('register')">
@@ -570,119 +591,120 @@
         </div>
 
         <form id="form-magic-login" class="auth-form" style="display: block">
-          <h3>Entrar sem Senha</h3>
-          <p style="color: #ccc; font-size: 0.9rem; text-align: center">
-            Digite seu e-mail. Enviaremos um link mágico para você entrar na
-            hora.
-          </p>
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold); margin-bottom: 10px">
+              Link Mágico
+            </h3>
+            <p style="color: #ccc; font-size: 0.9rem; line-height: 1.4">
+              Digite seu e-mail, enviaremos um link de confirmação.<br />
+              Verifique a <strong>caixa de entrada</strong> ou a
+              <strong>caixa de spam</strong>.
+            </p>
+          </div>
 
           <div class="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              id="magic-email"
-              required
-              placeholder="seu@email.com"
-            />
+            <label>E-mail</label>
+            <div class="input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                type="email"
+                id="magic-email"
+                required
+                placeholder="seu@email.com"
+              />
+            </div>
           </div>
 
           <button type="submit" class="btn-primary full-width">
-            Receber Link
+            Receber Link <i class="fa-solid fa-paper-plane"></i>
           </button>
-
-          <div style="text-align: center; margin-top: 15px">
-            <span style="color: #888; font-size: 0.9rem"
-              >Já tem uma senha definida?</span
-            ><br />
-            <a
-              href="#"
-              onclick="toggleLoginMode('password')"
-              style="
-                color: var(--color-gold);
-                font-size: 0.9rem;
-                text-decoration: none;
-              "
-            >
-              Entrar com Senha
-            </a>
-          </div>
         </form>
 
         <form id="form-password-login" class="auth-form" style="display: none">
-          <h3>Login com Senha</h3>
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold)">Entrar com Senha</h3>
+          </div>
 
           <div class="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              id="login-email"
-              required
-              placeholder="seu@email.com"
-            />
+            <label>E-mail</label>
+            <div class="input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                type="email"
+                id="login-email"
+                required
+                placeholder="seu@email.com"
+              />
+            </div>
           </div>
 
           <div class="form-group">
             <label>Senha</label>
-            <input
-              type="password"
-              id="login-password"
-              required
-              placeholder="******"
-            />
+            <div class="input-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                id="login-password"
+                required
+                placeholder="******"
+              />
+            </div>
           </div>
 
           <button type="submit" class="btn-primary full-width">Entrar</button>
 
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              margin-top: 15px;
-              font-size: 0.9rem;
-            "
-          >
+          <div style="text-align: center; margin-top: 15px">
             <a
               href="#"
-              onclick="toggleLoginMode('magic')"
-              style="color: var(--color-gold); text-decoration: none"
+              onclick="switchAuthTab('acesso')"
+              style="color: #888; font-size: 0.8rem"
+              >Esqueceu a senha? Use o Acesso Rápido.</a
             >
-              <i class="fa-solid fa-arrow-left"></i> Voltar para Link Mágico
-            </a>
-            <a href="reset.html" style="color: #ccc; text-decoration: none">
-              Esqueci a senha
-            </a>
           </div>
         </form>
 
         <form id="form-register" class="auth-form" style="display: none">
-          <h3>Crie sua conta</h3>
-          <div class="form-group">
-            <label>Nome</label
-            ><input type="text" name="name" required placeholder="Seu nome" />
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold)">Criar Conta</h3>
           </div>
+
           <div class="form-group">
-            <label>Email</label
-            ><input
+            <label>Nome Completo</label>
+            <input
+              type="text"
+              name="name"
+              required
+              placeholder="Ex: João Silva"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>E-mail</label>
+            <input
               type="email"
               name="email"
               required
               placeholder="seu@email.com"
             />
           </div>
+
           <div class="form-group">
-            <label>WhatsApp</label
-            ><input type="tel" name="whatsapp" placeholder="(00) 00000-0000" />
+            <label>WhatsApp</label>
+            <input type="text" name="whatsapp" placeholder="(XX) XXXXX-XXXX" />
           </div>
+
           <div class="form-group">
-            <label>Senha</label
-            ><input
+            <label>Senha</label>
+            <input
               type="password"
               name="password"
               required
               placeholder="******"
+              oninput="mostrarForcaSenha(this.value, 'reg-strength')"
             />
             <small id="reg-strength" class="password-strength"></small>
           </div>
+
           <button type="submit" class="btn-primary full-width">
             Cadastrar
           </button>
