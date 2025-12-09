@@ -1093,5 +1093,52 @@
         </button>
       </div>
     </div>
+
+    <div id="modal-magic-link" class="modal-overlay" style="display: none">
+      <div class="modal-content magic-modal-box">
+        <span class="close-btn" onclick="fecharModalMagic()">&times;</span>
+
+        <div style="text-align: center; margin-bottom: 15px">
+          <i
+            class="fa-solid fa-envelope-open-text"
+            style="font-size: 3rem; color: var(--color-gold)"
+          ></i>
+        </div>
+
+        <h3 style="text-align: center; color: var(--color-gold)">
+          Link Enviado! 🚀
+        </h3>
+
+        <div class="magic-text-body">
+          <p>Enviamos um link de acesso mágico para o seu e-mail.</p>
+
+          <ul class="magic-text-body">
+            <li>
+              <span>✅</span>
+              <div>Verifique sua <strong>Caixa de Entrada</strong>.</div>
+            </li>
+            <li>
+              <span>⚠️</span>
+              <div>
+                Olhe também na pasta de <strong>Spam</strong> ou
+                <strong>Lixo Eletrônico</strong>.
+              </div>
+            </li>
+            <li>
+              <span>⏳</span>
+              <div>O link expira em 15 minutos.</div>
+            </li>
+          </ul>
+          <p style="font-size: 0.85rem; color: #888">
+            Basta clicar no botão "Entrar Agora" que está no e-mail e você será
+            logado automaticamente aqui.
+          </p>
+        </div>
+
+        <button class="btn-primary full-width" onclick="fecharModalMagic()">
+          Entendi, vou verificar!
+        </button>
+      </div>
+    </div>
   </body>
 </html>

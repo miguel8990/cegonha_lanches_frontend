@@ -2028,3 +2028,29 @@ window.verificarOpcoes = function (id) {
 // A lógica agora é feita via 'adicionarItemDoModal' (para lanches) ou direta no 'verificarOpcoes' (para bebidas).
 
 window.adicionarAoCarrinho = adicionarAoCarrinho; // Garante exportação
+
+// --- NO FINAL DO ARQUIVO main.js ---
+
+// Define a função diretamente na janela global para evitar erro de escopo
+window.abrirModalMagic = function () {
+  console.log("Tentando abrir modal Magic Link..."); // Log para debug
+
+  const modal = document.getElementById("modal-magic-link");
+  if (modal) {
+    modal.classList.add("active"); // Usa classe para mostrar
+    modal.style.display = "flex"; // Reforça o display
+  } else {
+    console.error(
+      "ERRO: O HTML do modal #modal-magic-link não foi encontrado!"
+    );
+    alert("Verifique seu e-mail! (Modal não encontrado)");
+  }
+};
+
+window.fecharModalMagic = function () {
+  const modal = document.getElementById("modal-magic-link");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
+};

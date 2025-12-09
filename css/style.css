@@ -2582,3 +2582,106 @@ select#bairro option {
   padding: 10px; /* Um respiro */
   background-color: #222; /* Fundo escuro para completar o espaço */
 }
+
+/* --- ESTILO DO MODAL MAGIC LINK (Revamp Visual) --- */
+
+/* Caixa principal do modal */
+.magic-modal-box {
+  background-color: #1a1a1a; /* Garante fundo escuro */
+  width: 90%; /* Responsivo no celular */
+  max-width: 420px !important;
+  text-align: center;
+  border: 1px solid var(--color-gold); /* Borda dourada fina */
+  border-radius: 16px; /* Cantos mais arredondados */
+  padding: 30px 25px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); /* Sombra forte para destaque */
+  position: relative; /* Para posicionar o botão de fechar */
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Botão de Fechar (X) mais elegante */
+.magic-modal-box .close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  transition: 0.2s;
+  line-height: 1;
+  padding: 5px;
+}
+.magic-modal-box .close-btn:hover {
+  color: var(--color-red);
+  transform: scale(1.1);
+}
+
+/* Ícone do Envelope */
+.magic-icon-area {
+  margin-bottom: 20px;
+  animation: floatIcon 3s ease-in-out infinite; /* Flutua suavemente */
+}
+
+/* Caixa Cinza com as Instruções */
+.magic-text-body ul {
+  background: rgba(255, 255, 255, 0.05); /* Fundo sutil */
+  padding: 20px;
+  border-radius: 12px;
+  list-style: none;
+  margin: 20px 0;
+  border: 1px solid #333;
+  text-align: left; /* Garante que o texto fique à esquerda */
+}
+
+/* Item da lista (Onde a mágica do alinhamento acontece) */
+.magic-text-body li {
+  display: flex; /* Flexbox para alinhar ícone e texto */
+  align-items: flex-start; /* Alinha no topo caso o texto quebre linha */
+  gap: 12px; /* Espaço entre o emoji e o texto */
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  color: #ddd;
+  line-height: 1.4;
+}
+
+.magic-text-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* Ajuste nos emojis para não ficarem gigantes ou tortos */
+.magic-text-body li span {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0; /* Impede o emoji de ser esmagado */
+  margin-top: 2px; /* Ajuste fino vertical */
+}
+
+/* Texto pequeno do rodapé */
+.magic-footer-text {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* Animações */
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes floatIcon {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}

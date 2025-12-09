@@ -195,7 +195,7 @@ export async function pedirMagicLink(event) {
   btn.disabled = true;
 
   try {
-    // Detecta URL dinamicamente (igual ao api.js) para não quebrar em produção
+    // Detecta URL dinamicamente
     const isLocalhost =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
@@ -209,20 +209,27 @@ export async function pedirMagicLink(event) {
       body: JSON.stringify({ email }),
     });
 
-    const data = await res.json(); // [CORREÇÃO] Lê a resposta do servidor
+    const data = await res.json();
 
     if (res.ok) {
-      showToast(
-        "Verifique seu e-mail! Clique no link enviado para entrar.",
-        "success"
-      );
+      // --- MUDANÇA AQUI ---
+      // 1. Removemos o Toast simples
+      // 2. Chamamos o Modal explicativo
+      if (window.abrirModalMagic) {
+        window.abrirModalMagic();
+      } else {
+        // Fallback de segurança caso a função do modal não tenha carregado
+        showToast("Verifique seu e-mail! Link enviado.", "success");
+      }
+
+      // 3. (Opcional) Limpar o campo de e-mail para não confundir o usuário
+      const emailInput = document.getElementById("login-email"); // Verifique se o ID é esse mesmo no seu HTML
+      if (emailInput) emailInput.value = "";
     } else {
-      // [CORREÇÃO] Mostra o erro real (Ex: "Email não cadastrado" ou "Informe seu nome")
+      // Lógica de Erro (Mantém igual)
       showToast(data.error || "Erro ao enviar link.", "error");
 
-      // Se o erro for de usuário inexistente, sugere ir para o cadastro
       if (data.error && data.error.includes("Nome")) {
-        // Opcional: Trocar para a aba de cadastro automaticamente
         if (window.switchAuthTab) window.switchAuthTab("register");
       }
     }
