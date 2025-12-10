@@ -129,7 +129,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const socket = io(socketUrl);
 
   socket.on("connect", () => {
-    console.log("🟢 Conectado ao servidor!");
+    if (typeof io !== "undefined") {
+      // 1. Conexão
+      const socketUrl =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000"
+          : "https://cegonha-lanches-backend.onrender.com";
+      const socket = io(socketUrl);
+
+      socket.on("connect", () => {
+        console.log("🟢 Conectado ao servidor!");
+      });
+
+      // ... (resto do código do socket.on 'status_update', 'chat_message', etc) ...
+      // Mantenha todo o resto do código do socket DENTRO deste bloco if
+    } else {
+      console.warn(
+        "Socket.IO não carregado nesta página. Chat e notificações desativados."
+      );
+    }
   });
 
   // 2. Atualização de Status do Pedido

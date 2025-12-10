@@ -48,6 +48,7 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
   </head>
   <body>
     <div id="toast-container"></div>
@@ -131,7 +132,7 @@
         window.location.hostname === "127.0.0.1";
       const API_BASE_URL = isLocalhost
         ? "http://localhost:5000/api"
-        : "https://seu-backend.com/api";
+        : "https://cegonha-lanches-backend.onrender.com/api";
 
       // 2. Verifica se quem está acessando é Super Admin
       document.addEventListener("DOMContentLoaded", () => {
