@@ -201,7 +201,7 @@ export async function pedirMagicLink(event) {
       window.location.hostname === "127.0.0.1";
     const baseUrl = isLocalhost
       ? "http://localhost:5000/api"
-      : "https://seu-backend.com/api";
+      : "https://cegonha-lanches-backend.onrender.com/api";
 
     const res = await fetch(`${baseUrl}/auth/magic-login/request`, {
       method: "POST",

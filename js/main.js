@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const socketUrl =
     window.location.hostname === "localhost"
       ? "http://localhost:5000"
-      : "https://seu-backend.com";
+      : "https://cegonha-lanches-backend.onrender.com";
   const socket = io(socketUrl);
 
   socket.on("connect", () => {
