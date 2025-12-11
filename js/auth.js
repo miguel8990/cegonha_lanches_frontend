@@ -1,5 +1,5 @@
 // site/js/auth.js
-import { loginUser } from "./api.js";
+import { loginUser, API_BASE_URL } from "./api.js";
 import { openAuthModal, showToast } from "./main.js";
 
 // ==========================================
@@ -240,4 +240,73 @@ export async function pedirMagicLink(event) {
     btn.innerText = txtOriginal;
     btn.disabled = false;
   }
+}
+
+// Função que o Google chama ao completar o login
+async function handleGoogleCredentialResponse(response) {
+  console.log("Token Google recebido:", response.credential);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credential: response.credential }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Reutiliza sua lógica de sucesso existente (salvar token, atualizar UI)
+      // Aqui estou simulando o que você provavelmente faz no login normal
+      saveSession(data.token, data.user);
+
+      alert(`Bem-vindo, ${data.user.name}!`);
+      window.location.reload(); // Ou fechar modal e atualizar header
+    } else {
+      alert(data.message || "Erro ao logar com Google");
+    }
+  } catch (error) {
+    console.error("Erro comunicação API:", error);
+    alert("Erro ao conectar com o servidor.");
+  }
+}
+
+// Inicializa o botão (chame isso quando a página carregar ou quando abrir o modal)
+// site/js/auth.js
+
+export function initGoogleButton() {
+  // Tenta verificar se o Google carregou a cada meio segundo
+  let tentativas = 0;
+  const intervalo = setInterval(() => {
+    if (window.google) {
+      clearInterval(intervalo); // Parar de tentar, já carregou!
+
+      // Inicializa com seu Client ID
+      window.google.accounts.id.initialize({
+        client_id:
+          "681186932916-jsjkbpajai5mchsbrfrbmfshh27cqpo6.apps.googleusercontent.com",
+        callback: handleGoogleCredentialResponse,
+      });
+
+      // Renderiza o botão
+      const btnContainer = document.getElementById("google-btn-container");
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(btnContainer, {
+          theme: "outline",
+          size: "large",
+          type: "standard",
+          text: "signin_with",
+        });
+      }
+    } else {
+      tentativas++;
+      // Desiste após 5 segundos (10 tentativas) para não travar
+      if (tentativas > 10) {
+        clearInterval(intervalo);
+        console.error("Google Identity Services não carregou a tempo.");
+      }
+    }
+  }, 500);
 }

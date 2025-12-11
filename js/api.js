@@ -10,7 +10,7 @@ const isLocalhost =
   window.location.hostname === "127.0.0.1";
 
 // Se for localhost, usa a porta 5000. Se for produção (Vercel/Render), usa a URL do seu backend online.
-const API_BASE_URL = isLocalhost
+export const API_BASE_URL = isLocalhost
   ? "http://localhost:5000/api"
   : "https://cegonha-lanches-backend.onrender.com/api";
 

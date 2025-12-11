@@ -24,6 +24,7 @@
     <link rel="shortcut icon" href="assets/favicon.webp" type="image/webp" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
     <meta name="theme-color" content="#d93025" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
 
   <body>
@@ -652,7 +653,13 @@
           </div>
 
           <button type="submit" class="btn-primary full-width">Entrar</button>
+          <div class="auth-tabs"></div>
 
+          <div
+            style="display: flex; justify-content: center; margin-bottom: 20px"
+          >
+            <div id="google-btn-container"></div>
+          </div>
           <div style="text-align: center; margin-top: 15px">
             <a
               href="#"

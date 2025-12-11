@@ -24,6 +24,7 @@ import {
   saveSession,
   clearSession,
   pedirMagicLink,
+  initGoogleButton,
 } from "./auth.js";
 
 // Estado Global
@@ -75,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initBairrosSelect();
   salvarCarrinhoLocal();
   checkMagicLinkReturn();
+  initGoogleButton();
 
   // Verifica Login ao carregar
   checkLoginState();
