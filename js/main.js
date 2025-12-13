@@ -270,36 +270,30 @@ function checkLoginState() {
   const btnLogin = document.getElementById("btn-open-login");
   const profileArea = document.getElementById("user-profile-area");
   const nameDisplay = document.getElementById("user-name-display");
-
-  // [NOVO] Pega a referência do link admin
   const adminLink = document.getElementById("admin-link");
 
-  // Auto-preenchimento (Nome e WhatsApp)
+  // --- PERSISTÊNCIA FORTE: Preenche sempre que tiver dados ---
   if (user.name) {
     const nameInput = document.getElementById("name");
-    if (nameInput && !nameInput.value) nameInput.value = user.name;
+    if (nameInput) nameInput.value = user.name; // Preenche sempre
   }
   if (user.whatsapp) {
     const phoneInput = document.getElementById("phone");
-    if (phoneInput && !phoneInput.value) phoneInput.value = user.whatsapp;
+    if (phoneInput) phoneInput.value = user.whatsapp; // Preenche sempre
   }
 
   // Lógica de Exibição (Logado vs Deslogado)
   if (token && user.name) {
     if (btnLogin) btnLogin.style.display = "none";
-    if (profileArea) profileArea.style.display = "flex"; // 'flex' para alinhar bolinha
+    if (profileArea) profileArea.style.display = "flex";
     if (nameDisplay) nameDisplay.innerText = `Olá, ${user.name.split(" ")[0]}`;
 
-    // [NOVO] Lógica do Botão Admin
     if (adminLink) {
-      if (user.role === "admin" || user.role === "super_admin") {
-        adminLink.style.display = "block"; // Mostra se for chefe
-      } else {
-        adminLink.style.display = "none"; // Esconde se for cliente
-      }
+      adminLink.style.display =
+        user.role === "admin" || user.role === "super_admin" ? "block" : "none";
     }
 
-    // Busca endereço ativo
+    // Busca e preenche endereço ativo (Dispara a função corrigida acima)
     if (user.id) {
       fetchAddresses().then((list) => preencherCheckoutComAtivo(list));
     }
@@ -307,7 +301,7 @@ function checkLoginState() {
     // Deslogado
     if (btnLogin) btnLogin.style.display = "flex";
     if (profileArea) profileArea.style.display = "none";
-    if (adminLink) adminLink.style.display = "none"; // Garante que suma
+    if (adminLink) adminLink.style.display = "none";
   }
 }
 
@@ -519,13 +513,20 @@ function atualizarCarrinhoUI() {
   const contador = document.getElementById("cart-count");
   const totalSpan = document.getElementById("cart-total-price");
   if (!container) return;
+
   container.innerHTML = "";
   let total = 0;
   let totalItens = 0;
 
   if (carrinho.length === 0) {
     container.innerHTML = '<p class="empty-msg">Seu carrinho está vazio 🍔</p>';
+    // [CORREÇÃO 1] Se vazio, remove cupom sem dar grito de erro
+    if (cupomSelecionado) {
+      cupomSelecionado = null;
+      atualizarVisualDesconto();
+    }
   } else {
+    // ... (código de renderização dos itens continua igual) ...
     carrinho.forEach((item) => {
       total += item.preco * item.quantity;
       totalItens += item.quantity;
@@ -550,23 +551,29 @@ function atualizarCarrinhoUI() {
       container.appendChild(itemDiv);
     });
   }
+
   if (contador) contador.innerText = totalItens;
   if (totalSpan)
     totalSpan.innerText = `R$ ${total.toFixed(2).replace(".", ",")}`;
 
   renderizarCupons();
 
-  // Se o total caiu e tinha cupom selecionado inválido, remove ele
+  // [CORREÇÃO 2] Validação do Cupom Blindada
   const novoTotal = carrinho.reduce(
     (acc, item) => acc + item.preco * item.quantity,
     0
   );
+
   if (cupomSelecionado && novoTotal < cupomSelecionado.min_purchase) {
     cupomSelecionado = null;
     atualizarVisualDesconto();
-    showToast("Cupom removido: Valor mínimo não atingido.", "warning");
+
+    // O SEGREDO: Só mostra o aviso se o carrinho NÃO estiver vazio.
+    // Se estiver vazio (novoTotal === 0), é limpeza pós-compra, então fica quieto.
+    if (novoTotal > 0) {
+      showToast("Cupom removido: Valor mínimo não atingido.", "warning");
+    }
   } else if (cupomSelecionado) {
-    // Recalcula o valor do desconto se o total mudou
     atualizarVisualDesconto();
   }
 }
@@ -1066,137 +1073,183 @@ function initContactForm() {
   }
 
   // 3. ENVIO DO FORMULÁRIO
+  // --- SUBSTIUA O SEU 'form.addEventListener' ATUAL POR ESTE BLOCO COMPLETO ---
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    //bloqueio de loja fechada
 
+    // 1. Validações Iniciais (Antes de abrir o modal)
+
+    // Verifica se a loja está aberta
     if (!lojaAberta) {
       document.getElementById("modal-closed").style.display = "flex";
-      return; // Para tudo, não envia nada
+      return;
     }
 
-    // ===> 2. [NOVO] BLOQUEIO DE LOGIN <===
-
+    // Verifica Login
     const { token } = getSession();
-
     if (!token) {
-      // Abre o modal de autenticação
-      // Supondo que você tem uma função para abrir o modal de login
-      // Se não tiver, chame document.getElementById('modal-auth').style.display = 'flex';
       abrirModalLogin(
         "Para finalizar o pedido, é necessário entrar ou cadastrar-se."
       );
       return;
     }
 
-    // Identifica qual botão clicou (Sistema ou WhatsApp)
-    const btnClicado = e.submitter;
-    const deveAbrirZap = btnClicado && btnClicado.id === "btn-submit-whatsapp";
-    const totalProdutos = carrinho.reduce(
-      (a, b) => a + b.preco * b.quantity,
-      0
-    );
-    const totalFinal = totalProdutos + taxaEntregaAtual; // Soma o frete
-
-    // Validação Básica
+    // Validações de Campos
     const name = document.getElementById("name").value;
     const phone = document.getElementById("phone").value;
     const isRetirada = retiradaCheck ? retiradaCheck.checked : false;
 
     if (name.length < 3) return showToast("Por favor, digite seu nome.");
-    if (phone.length < 14) return showToast("Digite um WhatsApp válido."); // (XX) XXXXX-XXXX tem 15 chars, min 14
-    if (carrinho.length === 0) return showToast("Seu carrinho está vazio!");
+    if (phone.length < 14) return showToast("Digite um WhatsApp válido.");
+    if (carrinho.length === 0)
+      return showToast("Seu carrinho está vazio!", "warning");
 
-    // Se NÃO for retirada, valida endereço
+    // Validação de Endereço (se não for retirada)
     if (!isRetirada) {
       const rua = document.getElementById("address").value;
       const num = document.getElementById("number").value;
       const bairro = document.getElementById("bairro").value;
       if (!rua || !num || !bairro)
-        return showToast("Preencha o endereço completo para entrega.");
+        return showToast(
+          "Preencha o endereço completo para entrega.",
+          "warning"
+        );
     }
 
-    // Feedback Visual
-    if (btnClicado) {
-      btnClicado.innerText = "Enviando...";
-      btnClicado.disabled = true;
-    }
+    // ============================================================
+    // AQUI ENTRA A LÓGICA DO MODAL
+    // ============================================================
 
-    // Monta os dados
-    const total = carrinho.reduce((a, b) => a + b.preco * b.quantity, 0);
-    const resumoTexto = carrinho
-      .map((i) => `${i.quantity}x ${i.nome}`)
-      .join("\n");
+    // Verifica se o formulário já tem a "bandeira" de confirmado
+    if (form.getAttribute("data-confirmed") === "true") {
+      // --- CENÁRIO A: JÁ CONFIRMADO PELO MODAL (ENVIO REAL) ---
 
-    // Captura Pagamento
-    const paymentEl = document.querySelector(
-      'input[name="paymentMethod"]:checked'
-    );
-    let paymentMethod = paymentEl ? paymentEl.value : "Não informado";
+      // Remove a bandeira para o próximo pedido
+      form.removeAttribute("data-confirmed");
 
-    // Adiciona detalhes do troco se for dinheiro
-    if (paymentMethod === "cash") {
-      const trocoVal = document.getElementById("troco-for")?.value;
-      if (trocoVal) paymentMethod += ` (Troco para ${trocoVal})`;
-    }
+      // Identifica qual botão clicou (Sistema ou WhatsApp)
+      // Nota: Ao usar requestSubmit() do modal, o 'submitter' pode se perder em alguns browsers,
+      // mas vamos assumir o padrão do sistema se não detectado.
+      const btnClicado = e.submitter;
+      const deveAbrirZap =
+        btnClicado && btnClicado.id === "btn-submit-whatsapp";
 
-    const frontData = {
-      name: name,
-      phone: phone,
-      // Se for retirada, mandamos um texto fixo para o backend não reclamar
-      address: isRetirada
-        ? "RETIRADA NO LOCAL"
-        : document.getElementById("address").value,
-      number: isRetirada ? "0" : document.getElementById("number").value,
-      bairro: isRetirada ? "-" : document.getElementById("bairro").value,
+      // Feedback Visual no Botão (se possível identificar)
+      if (btnClicado) {
+        btnClicado.innerText = "Enviando...";
+        btnClicado.disabled = true;
+      } else {
+        // Fallback visual no botão principal se o submitter não for detectado
+        const btnMain = document.getElementById("btn-submit-system");
+        if (btnMain) {
+          btnMain.innerText = "Enviando...";
+          btnMain.disabled = true;
+        }
+      }
 
-      comp: isRetirada ? "" : document.getElementById("comp").value,
+      // --- PREPARAÇÃO DOS DADOS (CÓDIGO ORIGINAL SEU) ---
+      const totalProdutos = carrinho.reduce(
+        (a, b) => a + b.preco * b.quantity,
+        0
+      );
+      let totalFinal = totalProdutos + taxaEntregaAtual;
 
-      message: document.getElementById("message").value,
-      payment_method: paymentMethod,
-      resumoCarrinho: resumoTexto,
-      total: total,
-      cartItems: carrinho,
-      total: totalFinal, // Envia o total já com frete
-      coupon_code: cupomSelecionado ? cupomSelecionado.code : null,
-    };
+      // Recalcula desconto para garantir precisão
+      let desconto = 0;
+      if (cupomSelecionado) {
+        const subtotal = carrinho.reduce(
+          (acc, item) => acc + item.preco * item.quantity,
+          0
+        );
+        if (cupomSelecionado.discount_percent > 0) {
+          desconto = subtotal * (cupomSelecionado.discount_percent / 100);
+        } else {
+          desconto = cupomSelecionado.discount_fixed;
+        }
+        if (desconto > subtotal) desconto = subtotal;
+      }
+      totalFinal = totalFinal - desconto;
 
-    // Envia
-    const res = await submitOrder(frontData, deveAbrirZap);
+      const resumoTexto = carrinho
+        .map((i) => `${i.quantity}x ${i.nome}`)
+        .join("\n");
 
-    if (btnClicado) {
-      btnClicado.innerText = deveAbrirZap ? "WhatsApp" : "Fazer Pedido";
-      btnClicado.disabled = false;
-    }
+      // Captura Pagamento
+      const paymentEl = document.querySelector(
+        'input[name="paymentMethod"]:checked'
+      );
+      let paymentMethod = paymentEl ? paymentEl.value : "Não informado";
+      if (paymentMethod === "cash") {
+        const trocoVal = document.getElementById("troco-for")?.value;
+        if (trocoVal) paymentMethod += ` (Troco para ${trocoVal})`;
+      }
 
-    if (res.success) {
-      /*if (res.redirectUrl) {
-        showToast("Redirecionando para pagamento...", "success");
+      const frontData = {
+        name: name,
+        phone: phone,
+        address: isRetirada
+          ? "RETIRADA NO LOCAL"
+          : document.getElementById("address").value,
+        number: isRetirada ? "0" : document.getElementById("number").value,
+        bairro: isRetirada ? "-" : document.getElementById("bairro").value,
+        comp: isRetirada ? "" : document.getElementById("comp").value,
+        message: document.getElementById("message").value,
+        payment_method: paymentMethod,
+        resumoCarrinho: resumoTexto,
+        cartItems: carrinho,
+        total: totalFinal,
+        coupon_code: cupomSelecionado ? cupomSelecionado.code : null,
+      };
 
-        // Aguarda 1s para o usuário ler e abre o Mercado Pago
-        setTimeout(() => {
-          window.location.href = res.redirectUrl;
-        }, 1000);
-        return; // Para aqui, não reseta o form ainda
-      }*/
+      // --- ENVIO API (CÓDIGO ORIGINAL SEU) ---
+      try {
+        const res = await submitOrder(frontData, deveAbrirZap);
 
-      if (!deveAbrirZap)
-        showToast(`Pedido #${res.orderId} enviado com sucesso!`);
+        if (res.success) {
+          if (!deveAbrirZap)
+            showToast(`Pedido #${res.orderId} enviado com sucesso!`, "success");
 
-      carrinho = [];
+          // Limpeza Segura (Sua correção anterior)
+          fecharModalConfirmacao();
+          carrinho = [];
+          cupomSelecionado = null;
+          atualizarVisualDesconto();
+          salvarCarrinhoLocal();
+          atualizarCarrinhoUI();
+          atualizarBotoesMenu();
+          form.reset();
+          checkLoginState();
 
-      salvarCarrinhoLocal();
-      atualizarCarrinhoUI();
-      atualizarBotoesMenu();
-      form.reset();
-
-      // Reseta estado visual da retirada
-      if (isRetirada && retiradaCheck) {
-        retiradaCheck.checked = false;
-        toggleAddress(); // Mostra endereço de volta
+          if (isRetirada && retiradaCheck) {
+            retiradaCheck.checked = false;
+            const addressSection = document.querySelector(".address-section");
+            if (addressSection) addressSection.style.display = "block";
+          }
+        } else {
+          showToast("Erro ao enviar: " + res.error, "error");
+        }
+      } catch (error) {
+        console.error(error);
+        showToast("Erro técnico ao enviar pedido.", "error");
+      } finally {
+        // Restaura botões
+        if (btnClicado) {
+          btnClicado.innerText = deveAbrirZap ? "WhatsApp" : "Fazer Pedido";
+          btnClicado.disabled = false;
+        } else {
+          const btnMain = document.getElementById("btn-submit-system");
+          if (btnMain) {
+            btnMain.innerText = "Fazer Pedido";
+            btnMain.disabled = false;
+          }
+        }
       }
     } else {
-      showToast("Erro ao enviar: " + res.error);
+      // --- CENÁRIO B: NÃO CONFIRMADO -> ABRE O MODAL ---
+
+      // Detecta se foi clique no WhatsApp (se for Zap, talvez você não queira modal,
+      // mas aqui vamos abrir o modal para ambos por segurança)
+      abrirModalConfirmacao();
     }
   });
 }
@@ -1296,14 +1349,14 @@ async function saveAccountDetails() {
   const pass = document.getElementById("acc-password").value;
   const confirm = document.getElementById("acc-password-confirm").value;
 
-  // 1. Validação de Senha (Se o usuário tentou mudar)
+  // 1. Validação de Senha
   if (pass) {
     const check = validarForcaSenha(pass);
     if (!check.valid) {
-      return showToast("Senha muito fraca: " + check.msg);
+      return showToast("Senha muito fraca: " + check.msg, "warning");
     }
     if (pass !== confirm) {
-      return showToast("As senhas não conferem!");
+      return showToast("As senhas não conferem!", "warning");
     }
   }
 
@@ -1312,28 +1365,36 @@ async function saveAccountDetails() {
 
   const data = {
     name: document.getElementById("acc-name").value,
-    whatsapp: document.getElementById("acc-whatsapp").value,
-    // Envia senha apenas se preenchida e validada
+    whatsapp: document.getElementById("acc-whatsapp").value, // Captura o Zap
     password: pass || undefined,
   };
 
   const res = await updateUserProfile(data);
 
   if (res.success) {
-    const { token, user: oldUser } = getSession();
+    // Pega a sessão antiga
+    const { user: oldUser } = getSession();
+
+    // Mescla os dados antigos com os novos que vieram do backend
     const newUser = { ...oldUser, ...res.user };
+
+    // [CORREÇÃO CRÍTICA] Salva a nova versão no navegador!
+    // Antes, essa linha não existia, por isso o dado sumia ao recarregar
+    saveSession(null, newUser);
+
+    // Atualiza a tela imediatamente
     checkLoginState();
 
-    showToast("Dados atualizados com sucesso!");
+    showToast("Dados atualizados com sucesso!", "success");
 
-    // Limpa campos de senha para segurança
+    // Limpa campos de senha
     document.getElementById("acc-password").value = "";
     document.getElementById("acc-password-confirm").value = "";
     document.getElementById("acc-strength").innerText = "";
 
     closeAccountModal();
   } else {
-    showToast("Erro: " + res.error);
+    showToast("Erro: " + res.error, "error");
   }
 
   btn.innerText = originalTxt;
@@ -1418,15 +1479,35 @@ async function carregarListaEnderecos() {
 
 function preencherCheckoutComAtivo(enderecos) {
   const ativo = enderecos.find((a) => a.is_active);
+
+  // 1. Preenche os campos de texto
   if (ativo) {
     if (document.getElementById("address"))
       document.getElementById("address").value = ativo.street;
     if (document.getElementById("number"))
       document.getElementById("number").value = ativo.number;
-    if (document.getElementById("bairro"))
-      document.getElementById("bairro").value = ativo.neighborhood;
     if (document.getElementById("comp"))
       document.getElementById("comp").value = ativo.complement || "";
+
+    // 2. Seleciona o Bairro e FORÇA o cálculo da taxa
+    const bairroSelect = document.getElementById("bairro");
+    if (bairroSelect) {
+      bairroSelect.value = ativo.neighborhood;
+
+      // Truque: Simula que o usuário mudou manualmente para atualizar a variável global
+      const option = bairroSelect.options[bairroSelect.selectedIndex];
+      if (option) {
+        taxaEntregaAtual = parseFloat(option.getAttribute("data-price") || 0);
+
+        // Atualiza o display visual da taxa no formulário (se existir)
+        const displayFee = document.getElementById("delivery-fee-display");
+        if (displayFee) {
+          displayFee.innerText = `R$ ${taxaEntregaAtual
+            .toFixed(2)
+            .replace(".", ",")}`;
+        }
+      }
+    }
   }
 }
 
@@ -2072,5 +2153,178 @@ window.fecharModalMagic = function () {
   if (modal) {
     modal.classList.remove("active");
     modal.style.display = "none";
+  }
+};
+
+// --- Lógica do Modal de Confirmação ---
+
+window.fecharModalConfirmacao = function () {
+  const modal = document.getElementById("modal-confirm-order");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none"; // Força o desaparecimento
+  }
+};
+
+window.abrirModalConfirmacao = function () {
+  const modal = document.getElementById("modal-confirm-order");
+  const container = document.getElementById("confirm-summary-body");
+
+  if (!modal || !container) return;
+
+  // 1. Coletar dados
+  const nome = document.getElementById("name").value;
+  const telefone = document.getElementById("phone").value;
+
+  const rua = document.getElementById("address").value;
+  const numero = document.getElementById("number").value;
+  const bairroSelect = document.getElementById("bairro");
+  const bairroNome =
+    bairroSelect.options[bairroSelect.selectedIndex]?.text || "";
+  const complemento = document.getElementById("comp").value;
+  const isRetirada = document.getElementById("retirada-check").checked;
+
+  const metodoPagamentoInput = document.querySelector(
+    'input[name="paymentMethod"]:checked'
+  );
+  let metodoPagamento = metodoPagamentoInput
+    ? metodoPagamentoInput.parentElement.innerText.trim()
+    : "Não informado";
+
+  const trocoVal = document.getElementById("troco-for").value;
+  if (
+    metodoPagamentoInput &&
+    metodoPagamentoInput.value === "cash" &&
+    trocoVal
+  ) {
+    metodoPagamento += ` (Troco p/ ${trocoVal})`;
+  }
+
+  // 2. Calcular Totais
+  const subtotal = carrinho.reduce(
+    (acc, item) => acc + item.preco * item.quantity,
+    0
+  );
+  let desconto = 0;
+
+  if (cupomSelecionado) {
+    if (cupomSelecionado.discount_percent > 0) {
+      desconto = subtotal * (cupomSelecionado.discount_percent / 100);
+    } else {
+      desconto = cupomSelecionado.discount_fixed;
+    }
+    if (desconto > subtotal) desconto = subtotal;
+  }
+
+  // Usa a taxa global (que agora é atualizada corretamente pelo preencherCheckoutComAtivo)
+  const taxa = isRetirada ? 0 : taxaEntregaAtual;
+
+  // Cálculo final blindado
+  const totalFinal = Math.max(0, subtotal + taxa - desconto);
+
+  // 3. HTML do Resumo
+  let itensHtml = carrinho
+    .map(
+      (item) => `
+        <div class="confirm-item-row">
+            <span>${item.quantity}x ${item.nome}</span>
+            <span>R$ ${(item.preco * item.quantity)
+              .toFixed(2)
+              .replace(".", ",")}</span>
+        </div>
+        ${
+          item.details && item.details.obs
+            ? `<small style="color:#888; display:block; margin-top:-4px;">Obs: ${item.details.obs}</small>`
+            : ""
+        }
+    `
+    )
+    .join("");
+
+  let enderecoHtml = isRetirada
+    ? `<p><strong>Tipo:</strong> Retirada no Balcão 🏃</p>`
+    : `<p><strong>Entrega em:</strong> ${rua}, ${numero} - ${bairroNome}</p>
+           ${complemento ? `<p><small>Comp: ${complemento}</small></p>` : ""}`;
+
+  let html = `
+        <div class="confirm-section">
+            <h4>📦 Itens do Pedido</h4>
+            ${itensHtml}
+        </div>
+
+        <div class="confirm-section confirm-info">
+            <h4>📍 Dados da Entrega</h4>
+            <p><strong>Cliente:</strong> ${nome} (${telefone})</p>
+            ${enderecoHtml}
+        </div>
+
+        <div class="confirm-section confirm-info">
+            <h4>💳 Pagamento</h4>
+            <p><strong>Forma:</strong> ${metodoPagamento}</p>
+        </div>
+
+        <div class="confirm-section">
+            <div class="confirm-item-row">
+                <span>Subtotal:</span>
+                <span>R$ ${subtotal.toFixed(2).replace(".", ",")}</span>
+            </div>
+            ${
+              !isRetirada
+                ? `
+            <div class="confirm-item-row">
+                <span>Entrega:</span>
+                <span>R$ ${taxa.toFixed(2).replace(".", ",")}</span>
+            </div>`
+                : ""
+            }
+            
+            ${
+              desconto > 0
+                ? `
+            <div class="confirm-item-row" style="color: #2ecc71; font-weight: bold;">
+                <span>Desconto:</span>
+                <span>- R$ ${desconto.toFixed(2).replace(".", ",")}</span>
+            </div>`
+                : ""
+            }
+            
+            <div class="confirm-total-row">
+                <span>TOTAL:</span>
+                <span>R$ ${totalFinal.toFixed(2).replace(".", ",")}</span>
+            </div>
+        </div>
+    `;
+
+  container.innerHTML = html;
+  modal.classList.add("active");
+  modal.style.display = "flex";
+};
+
+// Função que o botão "Confirmar" do modal chama
+window.enviarPedidoFinal = function () {
+  // Fecha o modal
+  fecharModalConfirmacao();
+
+  // Dispara o envio real (chama a função que já existe na API/Main logic)
+  // Precisamos de um jeito de chamar o submitOrder original.
+  // A maneira mais fácil é despachar um evento customizado ou chamar a função se ela estiver acessível.
+
+  // Como o submitOrder coleta dados do form, basta chamar ele passando o form ou simulando o submit.
+  // Mas para evitar recursividade, vamos chamar a lógica de envio diretamente.
+
+  // AQUI ESTÁ O TRUQUE: Vamos chamar a função submitOrder importada do api.js
+  // Mas precisamos dos dados. A submitOrder original pega do form.
+  // Então vamos apenas disparar o evento submit no form mas com uma flag para "ignorar modal".
+
+  const form = document.getElementById("contact-form");
+  if (form) {
+    // Marca o formulário como confirmado
+    form.setAttribute("data-confirmed", "true");
+
+    // Dispara o envio novamente (agora vai cair no IF correto do listener)
+    form.requestSubmit();
+  } else {
+    console.error("Erro crítico: Formulário 'contact-form' não encontrado.");
+    alert("Erro ao enviar. Tente recarregar a página.");
   }
 };

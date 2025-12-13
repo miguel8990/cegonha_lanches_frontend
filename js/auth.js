@@ -79,11 +79,12 @@ export function checkMagicLinkReturn() {
     const name = params.get("name");
     const role = params.get("role");
     const id = params.get("id");
+    const whatsapp = params.get("whatsapp");
 
     if (name && id) {
       // O cookie HttpOnly já foi setado pelo backend no redirect.
       // Apenas salvamos o estado visual.
-      const userObj = { id, name, role };
+      const userObj = { id, name, role, whatsapp };
       saveSession(null, userObj);
 
       // Limpa a URL para ficar bonita

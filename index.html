@@ -1180,5 +1180,26 @@
         </button>
       </div>
     </div>
+    <div id="modal-confirm-order" class="modal-overlay">
+      <div class="modal-content confirm-modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Confirme seu Pedido 📝</h3>
+          <span class="close-modal-btn" onclick="fecharModalConfirmacao()"
+            >&times;</span
+          >
+        </div>
+
+        <div id="confirm-summary-body"></div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="fecharModalConfirmacao()">
+            Voltar e Editar
+          </button>
+          <button class="btn-confirm-final" onclick="enviarPedidoFinal()">
+            ✅ Confirmar e Enviar
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

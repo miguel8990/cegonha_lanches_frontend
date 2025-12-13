@@ -1210,6 +1210,9 @@ footer {
   font-size: 1.5rem;
   cursor: pointer;
 }
+.close-modal:hover {
+  color: #d32f2f;
+}
 .modal-body {
   padding: 20px;
   overflow-y: auto;
@@ -2676,4 +2679,154 @@ ul.magic-text-body li span {
     opacity: 1;
     transform: translateY(0);
   }
+}
+/* =========================================
+   NOVO VISUAL DO MODAL DE CONFIRMAÇÃO (CORRIGIDO DARK MODE)
+========================================= */
+
+/* A caixa principal do modal */
+.confirm-modal-content {
+  max-width: 500px;
+  width: 95%;
+  background-color: #1e1e1e; /* Fundo Cinza Escuro (Dark Mode) */
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); /* Sombra mais forte */
+  border: 1px solid #333; /* Borda sutil */
+}
+
+/* --- Cabeçalho (Título e X) --- */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background-color: #252525; /* Cabeçalho levemente mais claro que o corpo */
+  border-bottom: 1px solid #333;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff; /* Texto Branco */
+  font-weight: 700;
+}
+
+/* O novo botão X */
+.close-modal-btn {
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease;
+  padding: 5px;
+}
+
+.close-modal-btn:hover {
+  color: #e74c3c; /* Vermelho ao passar o mouse */
+}
+
+/* --- Corpo do Resumo --- */
+#confirm-summary-body {
+  padding: 25px;
+}
+
+/* Seções individuais */
+.confirm-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #333; /* Linha divisória escura */
+}
+
+.confirm-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.confirm-section h4 {
+  color: var(--color-gold); /* Dourado para títulos */
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Linhas de itens e valores */
+.confirm-item-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #e0e0e0; /* Branco gelo para facilitar leitura */
+}
+
+.confirm-info p {
+  margin: 5px 0;
+  color: #ccc; /* Cinza claro para informações secundárias */
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+/* --- Área de Totais (Onde estava o problema) --- */
+.confirm-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #fff; /* AGORA SIM: Branco puro para o total */
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid #444;
+}
+
+/* Destaque para o valor em Dourado */
+.confirm-total-row span:last-child {
+  color: var(--color-gold);
+}
+
+/* --- Botões de Ação --- */
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  padding: 0 25px 25px 25px;
+  margin-top: 0;
+}
+
+.btn-cancel,
+.btn-confirm-final {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+/* Botão Voltar */
+.btn-cancel {
+  background-color: #ec0a0a;
+  color: #ffffff;
+  flex: 1;
+  border: 1px solid #444;
+}
+.btn-cancel:hover {
+  background-color: #f80404;
+  color: #ffffff;
+}
+
+/* Botão Confirmar */
+.btn-confirm-final {
+  background-color: #27ae60;
+  color: white;
+  flex: 2;
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.2);
+}
+
+.btn-confirm-final:hover {
+  background-color: #219d54;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
 }
