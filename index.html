@@ -166,6 +166,7 @@
         </div>
       </section>
 
+      <br />
       <section id="bebidas" class="menu-section">
         <div class="container">
           <h2 class="section-title">
@@ -404,7 +405,7 @@
                   >
                 </div>
               </div>
-
+              <br />
               <div class="form-group">
                 <label for="message">Mensagem / Observações</label>
                 <textarea
@@ -434,44 +435,42 @@
                 </button>
               </div>
             </form>
-
-            <div class="contact-info-box">
-              <div class="info-item">
-                <div class="icon-box">
-                  <i class="fa-solid fa-location-dot"></i>
-                </div>
-                <div>
-                  <h3 class="info-title">Endereço</h3>
-                  <p class="info-text">R. Helenice Felício de Morais, 765</p>
-                  <p class="info-text">Itapagipe - MG</p>
-                  <p class="info-text">CEP: 38240-000</p>
-                </div>
-              </div>
-              <div class="social-links">
-                <a
-                  href="https://www.instagram.com/lanchescegonha/"
-                  target="_blank"
-                  class="social-icon"
-                  ><i class="fa-brands fa-instagram"></i> Instagram</a
-                >
-                <a
-                  href="https://wa.me/5534996537883"
-                  target="_blank"
-                  class="social-icon"
-                  ><i class="fa-brands fa-whatsapp"></i> WhatsApp</a
-                >
-                <a
-                  href="https://www.facebook.com/share/1Nt35Cf2nR/"
-                  target="_blank"
-                  class="social-icon"
-                  ><i class="fa-brands fa-facebook"></i> Facebook</a
-                >
-              </div>
-            </div>
           </div>
         </div>
       </section>
-
+      <section id="contact">
+        <div class="contact-info-box">
+          <div class="info-item">
+            <div id="Texto-info">
+              <h3 class="info-title">Endereço</h3>
+              <p class="info-text">R. Helenice Felício de Morais, 765</p>
+              <p class="info-text">Itapagipe - MG</p>
+              <p class="info-text">CEP: 38240-000</p>
+            </div>
+          </div>
+          <div class="social-links">
+            <a
+              href="https://www.instagram.com/lanchescegonha/"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-instagram"></i> Instagram</a
+            >
+            <a
+              href="https://wa.me/5534996537883"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-whatsapp"></i> WhatsApp</a
+            >
+            <a
+              href="https://www.facebook.com/share/1Nt35Cf2nR/"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-facebook"></i> Facebook</a
+            >
+          </div>
+        </div>
+      </section>
+      <br />
       <section id="about">
         <div class="container">
           <div class="about-content">
@@ -591,7 +590,11 @@
           </button>
         </div>
 
-        <form id="form-magic-login" class="auth-form" style="display: block">
+        <form
+          id="form-magic-login"
+          class="auth-form"
+          style="display: block; text-align: center"
+        >
           <div style="text-align: center; margin-bottom: 20px">
             <h3 style="color: var(--color-gold); margin-bottom: 10px">
               Link Mágico
@@ -603,7 +606,7 @@
             </p>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="text-align: center">
             <label>E-mail</label>
             <div class="input-icon">
               <i class="fa-solid fa-envelope"></i>
@@ -612,6 +615,7 @@
                 id="magic-email"
                 required
                 placeholder="seu@email.com"
+                style="width: 98%"
               />
             </div>
           </div>
@@ -621,7 +625,11 @@
           </button>
         </form>
 
-        <form id="form-password-login" class="auth-form" style="display: none">
+        <form
+          id="form-password-login"
+          class="auth-form"
+          style="display: none; text-align: center"
+        >
           <div style="text-align: center; margin-bottom: 20px">
             <h3 style="color: var(--color-gold)">Entrar com Senha</h3>
           </div>
@@ -635,6 +643,7 @@
                 id="login-email"
                 required
                 placeholder="seu@email.com"
+                style="width: 98%"
               />
             </div>
           </div>
@@ -648,11 +657,18 @@
                 id="login-password"
                 required
                 placeholder="******"
+                style="width: 98%"
               />
             </div>
           </div>
 
-          <button type="submit" class="btn-primary full-width">Entrar</button>
+          <button
+            type="submit"
+            class="btn-primary full-width"
+            style="width: 40%"
+          >
+            Entrar
+          </button>
           <div class="auth-tabs"></div>
 
           <div
@@ -670,7 +686,11 @@
           </div>
         </form>
 
-        <form id="form-register" class="auth-form" style="display: none">
+        <form
+          id="form-register"
+          class="auth-form"
+          style="display: none; text-align: center"
+        >
           <div style="text-align: center; margin-bottom: 20px">
             <h3 style="color: var(--color-gold)">Criar Conta</h3>
           </div>
@@ -682,6 +702,7 @@
               name="name"
               required
               placeholder="Ex: João Silva"
+              style="width: 98%"
             />
           </div>
 
@@ -692,12 +713,18 @@
               name="email"
               required
               placeholder="seu@email.com"
+              style="width: 98%"
             />
           </div>
 
           <div class="form-group">
             <label>WhatsApp</label>
-            <input type="text" name="whatsapp" placeholder="(XX) XXXXX-XXXX" />
+            <input
+              style="width: 98%"
+              type="text"
+              name="whatsapp"
+              placeholder="(XX) XXXXX-XXXX"
+            />
           </div>
 
           <div class="form-group">
@@ -707,12 +734,17 @@
               name="password"
               required
               placeholder="******"
+              style="width: 98%"
               oninput="mostrarForcaSenha(this.value, 'reg-strength')"
             />
             <small id="reg-strength" class="password-strength"></small>
           </div>
 
-          <button type="submit" class="btn-primary full-width">
+          <button
+            type="submit"
+            class="btn-primary full-width"
+            style="width: 40%"
+          >
             Cadastrar
           </button>
         </form>
@@ -1022,6 +1054,7 @@
             </h4>
             <div id="lista-acompanhamentos"></div>
           </div>
+
           <div id="modal-bebidas-section">
             <h4 class="modal-section-title">
               Bebidas <span class="optional-tag">Opcional</span>

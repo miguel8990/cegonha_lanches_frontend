@@ -1,4 +1,11 @@
+/* =============================================================================
+   ARQUIVO: style.css (Base Original + Refatoração de Menu/Contato)
+   DATA: 2025-12-13
+=============================================================================
+*/
+
 :root {
+  /* --- CORES ORIGINAIS MANTIDAS --- */
   --color-red: #d93025;
   --color-red-dark: #a51d15;
   --color-gold: #f2c94c;
@@ -7,17 +14,28 @@
   --color-gray: #333333;
   --color-text: #fdfbf7;
 
+  /* --- TIPOGRAFIA --- */
   --font-main: "Poppins", sans-serif;
 
+  /* --- ESPAÇAMENTOS --- */
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 2rem;
   --spacing-xl: 4rem;
 
+  /* --- UI ELEMENTS --- */
   --border-radius: 8px;
   --transition: all 0.3s ease;
+
+  /* --- NOVAS VARIÁVEIS PARA O DESIGN MODERNO --- */
+  --shadow-card: 0 10px 20px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 15px 30px rgba(0, 0, 0, 0.4);
+  --card-bg: #1e1e1e; /* Um cinza levemente diferente para cards */
 }
 
+/* =========================================
+   RESET E ESTRUTURA BASE (MANTIDO IDÊNTICO)
+   ========================================= */
 * {
   margin: 0;
   padding: 0;
@@ -26,7 +44,7 @@
 
 html,
 body {
-  overflow-x: hidden; /* Impede rolagem lateral indesejada no celular */
+  overflow-x: hidden;
   width: 100%;
 }
 
@@ -37,11 +55,10 @@ body {
   line-height: 1.6;
 }
 
-/* --- CONTAINER GERAL --- */
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px; /* Padding lateral seguro para celular */
+  padding: 0 20px;
 }
 
 .container-titulo {
@@ -49,23 +66,22 @@ body {
   align-items: center;
 }
 
-/* --- TIPOGRAFIA --- */
+/* --- TIPOGRAFIA MANTIDA --- */
 h1,
 h2,
 h3 {
   font-weight: 700;
   line-height: 1.2;
 }
-
 h1 {
-  font-size: 2.5rem; /* Reduzi um pouco para mobile */
+  font-size: 2.5rem;
   margin-bottom: var(--spacing-md);
 }
 
 @media (min-width: 768px) {
   h1 {
     font-size: 3.5rem;
-  } /* Aumenta no PC */
+  }
 }
 
 h2.section-title {
@@ -96,7 +112,7 @@ h2.section-title::after {
   color: var(--color-red);
 }
 
-/* --- BOTÕES --- */
+/* --- BOTÕES MANTIDOS --- */
 .btn-primary,
 .btn-whts,
 .btn-outline {
@@ -115,7 +131,6 @@ h2.section-title::after {
   background-color: var(--color-red);
   color: var(--color-cream);
 }
-
 .btn-primary:hover {
   background-color: var(--color-red-dark);
   transform: translateY(-2px);
@@ -124,18 +139,16 @@ h2.section-title::after {
 .btn-whts {
   background-color: #075e54;
   color: var(--color-cream);
-  width: 100%; /* No mobile fica bom ocupar tudo */
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 .btn-whts:hover {
   background-color: #128c7e;
   color: var(--color-cream);
   transform: translateY(-2px);
 }
-
 .btn-whts i {
   margin-right: 8px;
   font-size: 1.2rem;
@@ -146,14 +159,15 @@ h2.section-title::after {
   color: var(--color-gold);
   background: transparent;
 }
-
 .btn-outline:hover {
   background-color: var(--color-gold);
   color: var(--color-black);
   transform: translateY(-2px);
 }
 
-/* --- HEADER (LAYOUT LIMPO) --- */
+/* =========================================
+   HEADER (MANTIDO IDÊNTICO AO ARQUIVO)
+   ========================================= */
 #main-header {
   padding: 10px 0;
   position: fixed;
@@ -165,31 +179,26 @@ h2.section-title::after {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Container flexível que alinha as pontas */
 #main-header .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px; /* Altura fixa para evitar pulos */
+  height: 60px;
 }
 
-/* LADO ESQUERDO: Logo e Status */
 .container-titulo {
   display: flex;
   align-items: center;
   gap: 15px;
 }
-
 .logo img {
-  height: 50px; /* Controla altura da imagem */
+  height: 50px;
   width: auto;
 }
-
 .brand-wrapper {
   display: flex;
   flex-direction: column;
 }
-
 .logo-text {
   font-size: 1.2rem;
   font-weight: 700;
@@ -198,14 +207,11 @@ h2.section-title::after {
   line-height: 1.2;
 }
 
-/* LADO DIREITO: Navegação e Ações */
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 20px; /* Espaço padrão entre blocos */
+  gap: 20px;
 }
-
-/* Links do Menu (Desktop) */
 .nav-links {
   display: flex;
   gap: 25px;
@@ -213,7 +219,6 @@ h2.section-title::after {
   margin: 0;
   padding: 0;
 }
-
 .nav-links a {
   color: var(--color-cream);
   text-decoration: none;
@@ -221,21 +226,15 @@ h2.section-title::after {
   font-size: 0.95rem;
   transition: var(--transition);
 }
-
 .nav-links a:hover {
   color: var(--color-gold);
 }
 
-/* --- BOTÕES DE AÇÃO (Entrar, Perfil, Carrinho) --- */
-
-/* Container para agrupar Entrar/Perfil e Carrinho */
 .header-actions {
   display: flex;
   align-items: center;
   gap: 15px;
 }
-
-/* Botão Entrar */
 .btn-login-header {
   background: transparent;
   color: var(--color-cream);
@@ -245,26 +244,23 @@ h2.section-title::after {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  display: flex; /* Flex para alinhar ícone e texto */
+  display: flex;
   align-items: center;
   gap: 8px;
   transition: var(--transition);
   height: 40px;
 }
-
 .btn-login-header:hover {
   border-color: var(--color-gold);
   color: var(--color-gold);
 }
 
-/* Área do Perfil (Substitui o botão Entrar quando logado) */
 .profile-container {
   position: relative;
   display: flex;
   align-items: center;
   height: 40px;
 }
-
 .profile-icon {
   width: 40px;
   height: 40px;
@@ -279,17 +275,15 @@ h2.section-title::after {
   border: 2px solid #fff;
   transition: var(--transition);
 }
-
 .profile-icon:hover {
   transform: scale(1.05);
   box-shadow: 0 0 10px rgba(242, 201, 76, 0.5);
 }
 
-/* Menu Dropdown do Perfil */
 .profile-menu {
-  display: none; /* JS controla */
+  display: none;
   position: absolute;
-  top: 50px; /* Abaixo da bolinha */
+  top: 50px;
   right: 0;
   background: #222;
   border: 1px solid #444;
@@ -298,14 +292,12 @@ h2.section-title::after {
   padding: 15px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
   z-index: 2000;
-  text-align: right; /* Texto alinhado à direita fica elegante no dropdown */
+  text-align: right;
 }
-
 .profile-menu.active {
   display: block;
   animation: fadeIn 0.2s ease-out;
 }
-
 .profile-menu span {
   display: block;
   color: var(--color-gold);
@@ -313,7 +305,6 @@ h2.section-title::after {
   margin-bottom: 5px;
   font-size: 0.9rem;
 }
-
 .profile-menu a {
   display: block;
   color: #ccc;
@@ -326,12 +317,11 @@ h2.section-title::after {
   color: #fff;
 }
 
-/* Botão Carrinho */
 .cart-btn {
   background: transparent;
   border: 2px solid var(--color-gold);
   color: var(--color-cream);
-  width: 45px; /* Redondo */
+  width: 45px;
   height: 45px;
   border-radius: 50%;
   cursor: pointer;
@@ -342,12 +332,10 @@ h2.section-title::after {
   justify-content: center;
   transition: var(--transition);
 }
-
 .cart-btn:hover {
   background: var(--color-gold);
   color: var(--color-black);
 }
-
 .cart-count {
   position: absolute;
   top: -5px;
@@ -365,9 +353,8 @@ h2.section-title::after {
   border: 2px solid var(--color-black);
 }
 
-/* Hamburger */
 .hamburger {
-  display: none; /* Escondido no PC */
+  display: none;
   flex-direction: column;
   gap: 5px;
   cursor: pointer;
@@ -378,68 +365,21 @@ h2.section-title::after {
   background-color: var(--color-cream);
 }
 
-/* --- RESPONSIVIDADE (MOBILE) --- */
-@media (max-width: 768px) {
-  /* No mobile, escondemos os links de texto */
-  .nav-links {
-    display: none; /* O JS vai mudar para flex quando abrir o menu */
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: #1a1a1a;
-    flex-direction: column;
-    padding: 20px;
-    border-bottom: 1px solid #333;
-  }
-
-  .nav-links.active {
-    display: flex; /* Classe para JS abrir */
-  }
-
-  .hamburger {
-    display: flex; /* Mostra hamburger no mobile */
-  }
-
-  /* Ajuste de Espaçamento */
-  .nav-right {
-    gap: 10px;
-  }
-
-  /* Esconde o texto "Entrar" no mobile, deixa só o ícone se quiser economizar espaço,
-     ou diminui o padding */
-  .btn-login-header {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
-
-  .logo img {
-    height: 40px;
-  }
-  .logo-text {
-    font-size: 1rem;
-  }
-  .status-box {
-    display: none;
-  } /* Esconde status no mobile se faltar espaço */
-}
-
-/* --- HERO SECTION --- */
+/* --- HERO SECTION (MANTIDO IDÊNTICO) --- */
 #hero {
   min-height: 100vh;
   display: flex;
-  flex-direction: column-reverse; /* Imagem em cima/baixo do texto no mobile */
+  flex-direction: column-reverse;
   justify-content: center;
   align-items: center;
-  padding-top: 100px; /* Espaço do header */
+  padding-top: 100px;
   padding-bottom: 40px;
   background: linear-gradient(135deg, var(--color-black) 0%, #2a2a2a 100%);
   text-align: center;
 }
-
 @media (min-width: 769px) {
   #hero {
-    flex-direction: row; /* Lado a lado no PC */
+    flex-direction: row;
     text-align: left;
     padding-top: 80px;
   }
@@ -451,7 +391,6 @@ h2.section-title::after {
   padding: 20px;
   z-index: 2;
 }
-
 @media (min-width: 769px) {
   #hero .hero-content {
     padding-left: 10%;
@@ -467,20 +406,18 @@ h2.section-title::after {
   padding: 20px;
 }
 
-/* A Imagem do Hambúrguer (Responsiva) */
 .hero-img-real {
-  width: 80%; /* Ocupa 80% da largura do celular */
-  max-width: 320px; /* Não deixa ficar gigante no mobile */
+  width: 80%;
+  max-width: 320px;
   height: auto;
   aspect-ratio: 1 / 1;
   filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
   animation: flutuar 3s ease-in-out infinite;
 }
-
 @media (min-width: 769px) {
   .hero-img-real {
     width: 100%;
-    max-width: 550px; /* Pode crescer mais no PC */
+    max-width: 550px;
   }
 }
 
@@ -496,262 +433,501 @@ h2.section-title::after {
   }
 }
 
-/* --- CARDÁPIO GRID --- */
-.grid-container {
+/* =============================================================================
+   REFATORAÇÃO 1: CARDÁPIO, COMBOS E BEBIDAS (DESIGN MODERNO)
+   ============================================================================= */
+
+/* --- GRID SYSTEM MODERNO --- */
+.grid-container,
+.carousel {
   display: grid;
-  grid-template-columns: 1fr; /* 1 coluna no mobile */
-  gap: var(--spacing-lg);
+  /* Cria colunas responsivas automaticamente (min 280px) */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px; /* Espaço maior para "respiro" */
+  padding: 20px 0;
 }
 
-@media (min-width: 600px) {
-  .grid-container {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  }
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-
-  background-color: var(--color-gray);
-  border-radius: var(--border-radius);
+/* --- CARD DE PRODUTO (Estilo Glass/Dark Premium) --- */
+.menu-item,
+.combo-item {
+  background-color: var(--card-bg); /* Fundo cinza escuro sólido */
+  border-radius: 12px; /* Bordas mais arredondadas */
   overflow: hidden;
   transition: var(--transition);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  width: 100%;
-  max-width: 400px; /* Limita largura no mobile */
-  margin: 0 auto; /* Centraliza */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Borda sutil */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%; /* Garante altura igual */
 }
 
-.menu-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  border-color: var(--color-gold);
+/* Efeito Hover no Card */
+.menu-item:hover,
+.combo-item:hover {
+  transform: translateY(-8px); /* Levanta o card */
+  box-shadow: var(--shadow-hover);
+  border-color: var(--color-gold); /* Borda dourada ao passar o mouse */
+  background-color: #252525;
+}
+
+/* --- IMAGEM DO PRODUTO --- */
+.menu-img-wrapper {
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1/1; /* Mantém quadrado perfeito */
+  background: #151515;
 }
 
 .menu-img {
-  aspect-ratio: 1/1;
-  background-color: #444;
   width: 100%;
+  height: 100%;
   object-fit: cover;
-  display: block;
+  transition: transform 0.5s ease;
 }
 
+/* Zoom suave na imagem ao passar o mouse */
+.menu-item:hover .menu-img {
+  transform: scale(1.1);
+}
+
+/* --- CONTEÚDO DO CARD --- */
 .menu-info {
-  padding: var(--spacing-md);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  flex-grow: 1; /* Ocupa o resto do espaço */
   justify-content: space-between;
 }
-.menu-info p {
-  margin-bottom: 15px;
-}
+
 .menu-info h3 {
-  color: var(--color-gold);
-  margin-bottom: var(--spacing-sm);
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
 }
 
+.menu-info p {
+  color: #b0b0b0; /* Cinza claro para descrição */
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  line-height: 1.4;
+  flex-grow: 1; /* Empurra o preço/botão para baixo */
+}
+
+/* Preço em destaque */
 .menu-info .price {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: var(--color-cream);
-  margin-top: var(--spacing-sm);
+  color: var(--color-gold);
   display: block;
   margin-bottom: 15px;
-  margin-top: auto;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Botão de Adicionar (Largura Total no Card) */
 .menu-info button {
+  width: 100%;
+  justify-content: center;
   margin-top: auto;
-  width: 100%;
 }
 
-/* --- SOBRE NÓS --- */
-.about-content {
+/* --- SEÇÃO DE BEBIDAS (CORREÇÃO DE IMAGEM) --- */
+/* Garante que latas e garrafas apareçam inteiras */
+#bebidas-grid .menu-img {
+  object-fit: contain;
+  padding: 20px; /* Espaço para não colar na borda */
+  background-color: #151515;
+}
+
+/* --- SEÇÃO DE COMBOS (DESTAQUE) --- */
+.combo-item {
+  border: 1px solid rgba(242, 201, 76, 0.3); /* Borda dourada sutil por padrão */
+}
+
+/* Etiqueta de Oferta (Opcional, se o HTML tiver) */
+.combo-item::before {
+  /* Se você adicionar uma classe .promo no HTML, pode usar isso */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Controles de Quantidade (Refatorado para alinhar) */
+.quantity-controls {
   display: flex;
-  flex-direction: column; /* Empilhado no mobile */
-  gap: var(--spacing-xl);
   align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 8px;
 }
 
-@media (min-width: 769px) {
-  .about-content {
-    flex-direction: row;
-  }
+.qty-btn,
+.qty-btn-combo {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50%;
+  border: 1px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+  padding: 0;
+  font-size: 1.2rem;
 }
 
-.about-text {
-  flex: 1;
-}
-.about-image {
-  flex: 1;
-  width: 100%;
+.qty-btn:hover {
+  background: var(--color-gold);
+  color: #000;
 }
 
-/* --- CONTATO & FORMULÁRIO --- */
+.qty-btn-combo {
+  border-color: var(--color-red);
+  color: var(--color-red);
+}
+.qty-btn-combo:hover {
+  background: var(--color-red);
+  color: #fff;
+}
+
+.qty-display {
+  font-size: 1.1rem;
+  font-weight: 700;
+  width: 25px;
+  text-align: center;
+  color: #fff;
+}
+
+/* =============================================================================
+   REFATORAÇÃO 2: FORMULÁRIO DE CONTATO E CHECKOUT (MODERNIZADO)
+   ============================================================================= */
+
 #contact {
   padding: 60px 0;
-  background-color: #1a1a1a;
+  background-color: #151515; /* Fundo ligeiramente diferente do body */
 }
 
+/* Container estilo "Card" */
 .contact-wrapper {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  box-shadow: var(--shadow-card);
   display: flex;
-  flex-direction: column; /* Empilhado no mobile */
+  flex-direction: column;
   gap: 40px;
-  background-color: var(--color-gray);
-  padding: 20px;
-  border-radius: var(--border-radius);
 }
 
 @media (min-width: 769px) {
   .contact-wrapper {
-    flex-direction: row;
-    padding: var(--spacing-xl);
+    flex-direction: row; /* Colunas no Desktop */
+    padding: 40px;
+  }
+  .contact-info-box {
+    border-top: none;
+    border-left: 1px solid #333;
+    padding-top: 0;
+    padding-left: 40px;
   }
 }
 
 .contact-form {
   flex: 2;
 }
-
 .contact-info-box {
   flex: 1;
-  border-top: 1px solid #444;
+  border-top: 1px solid #333;
   padding-top: 30px;
 }
 
-@media (min-width: 769px) {
-  .contact-info-box {
-    border-top: none;
-    border-left: 1px solid #444;
-    padding-top: 0;
-    padding-left: var(--spacing-lg);
-  }
-}
-
-/* Campos do Formulário */
+/* --- INPUTS MODERNOS --- */
 .form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-/* Form Row (Rua e Número na mesma linha) */
-.form-row {
-  display: flex;
-  flex-direction: column; /* Empilhado no mobile (facilita digitar) */
-  gap: 0;
-}
-
-@media (min-width: 600px) {
-  .form-row {
-    flex-direction: row;
-    gap: 15px;
-  }
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 8px;
   color: var(--color-gold);
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
+/* Estilo Base dos Campos */
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+select#bairro {
   width: 100%;
-  padding: 12px;
-  background-color: var(--color-black);
+  padding: 14px 16px; /* Mais espaço interno */
+  background-color: #121212; /* Fundo bem escuro para contraste */
   border: 1px solid #444;
-  border-radius: var(--border-radius);
-  color: var(--color-text);
+  border-radius: 8px;
+  color: #fff;
   font-family: var(--font-main);
+  transition: all 0.3s ease;
+  font-size: 1rem;
 }
 
+/* Foco (Glow Dourado) */
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+select#bairro:focus {
   outline: none;
   border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.15);
 }
 
-/* Área de Endereço Destacada */
-.address-section {
-  background-color: rgba(255, 255, 255, 0.03);
+/* Ícones dentro dos Inputs */
+.input-icon {
+  position: relative;
+  width: 100%;
+}
+.input-icon i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-gold);
+  font-size: 1.1rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.input-icon input {
+  padding-left: 50px; /* Espaço para o ícone */
+}
+
+/* --- BOTÃO DE RETIRADA (CHECKBOX ESTILIZADO) --- */
+.checkbox-container {
+  display: flex !important;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  background-color: #121212;
   padding: 15px;
   border-radius: 8px;
-  margin-bottom: 20px;
   border: 1px solid #444;
+  transition: 0.3s;
+  user-select: none;
+  margin-top: 10px;
+  max-width: 20%;
 }
 
-/* --- REDES SOCIAIS (Onde Estamos) --- */
-.info-item {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
-  align-items: flex-start;
+.checkbox-container:hover {
+  border-color: #666;
+  background: #1a1a1a;
 }
 
-.icon-box {
-  color: var(--color-red);
-  background: rgba(255, 255, 255, 0.05);
-  width: 40px;
-  height: 40px;
-  display: flex;
+/* Input escondido */
+.checkbox-container input {
+  display: none;
+}
+
+/* Quadrado Visual */
+.checkbox-container input + div, /* Fallback se não tiver classe */
+.checkmark {
+  display: flex !important; /* Força display */
+  width: 24px;
+  height: 24px;
+  border: 2px solid #666;
+  border-radius: 6px;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  transition: 0.2s;
+  background: transparent;
   flex-shrink: 0;
 }
 
-.info-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #fff;
-}
-.info-text {
-  color: #ccc;
-  font-size: 0.9rem;
-  margin: 0;
+/* Estado Marcado */
+.checkbox-container input:checked + .checkmark {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
 }
 
-.social-links {
+/* Símbolo de Check */
+.checkbox-container .checkmark::after {
+  content: "✔";
+  color: #000;
+  font-weight: 900;
+  font-size: 14px;
+  transform: scale(0);
+  transition: 0.2s;
+}
+
+.checkbox-container input:checked + .checkmark::after {
+  transform: scale(1);
+}
+
+.label-text {
+  font-size: 1rem;
+  color: #ddd;
+  font-weight: 500;
+}
+.checkbox-container input:checked ~ .label-text {
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+/* --- OPÇÕES DE PAGAMENTO (GRID DE CARTÕES) --- */
+.payment-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 colunas mobile */
+  gap: 15px;
+  margin-top: 15px;
+}
+
+@media (min-width: 600px) {
+  .payment-options {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.payment-option input {
+  display: none;
+}
+
+.payment-box {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-top: 25px;
-  align-items: flex-start;
-}
-
-.social-icon {
-  display: flex;
   align-items: center;
-  text-decoration: none;
+  justify-content: center;
   gap: 10px;
-  color: var(--color-cream);
-  font-weight: 500;
-  transition: all 0.3s ease;
+  padding: 15px;
+  background-color: #121212;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #ccc;
+  cursor: pointer;
+  transition: 0.3s;
+  height: 100%;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
-.social-icon:hover {
-  transform: translateX(5px);
+.payment-box i {
+  font-size: 1.5rem;
+  color: #666;
+  transition: 0.3s;
 }
 
-/* Cores Social Hover */
-#insta:hover {
-  color: #e1306c;
+.payment-box:hover {
+  border-color: #777;
+  background: #1a1a1a;
 }
-#face:hover {
-  color: #1877f2;
-}
-#wa:hover {
-  color: #25d366;
+.payment-box:hover i {
+  color: var(--color-gold);
 }
 
-/* --- CARRINHO LATERAL (SIDEBAR) --- */
+/* Pagamento Selecionado */
+.payment-option input:checked + .payment-box {
+  background-color: rgba(242, 201, 76, 0.1);
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.1);
+}
+.payment-option input:checked + .payment-box i {
+  color: var(--color-gold);
+  transform: scale(1.1);
+}
+
+/* Efeito de Endereço Desativado */
+.address-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+  transition: 0.3s;
+}
+
+/* =========================================
+   ELEMENTOS MANTIDOS (FOOTER, SIDEBAR, UTILS)
+   ========================================= */
+
+/* --- FOOTER MANTIDO --- */
+footer {
+  background-color: #000;
+  padding: var(--spacing-lg) 0;
+  text-align: center;
+  margin-top: var(--spacing-xl);
+  border-top: 1px solid #222;
+}
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+  text-align: left;
+}
+.footer-col h3 {
+  color: #fff;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+.footer-col h4 {
+  color: var(--color-gold);
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #333;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+.footer-links {
+  list-style: none;
+}
+.footer-links li {
+  margin-bottom: 10px;
+}
+.footer-links a {
+  color: #ccc;
+  text-decoration: none;
+  transition: 0.3s;
+}
+.footer-links a:hover {
+  color: var(--color-gold);
+  padding-left: 5px;
+}
+.payment-icons {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  font-size: 1.5rem;
+  color: #fff;
+}
+.footer-bottom {
+  border-top: 1px solid #222;
+  padding-top: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.legal-text {
+  opacity: 0.6;
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+@media (max-width: 768px) {
+  .footer-content {
+    text-align: center;
+  }
+  .payment-icons {
+    justify-content: center;
+  }
+}
+
+/* --- SIDEBAR E OUTROS UTILS DO ARQUIVO ORIGINAL --- */
 .cart-sidebar {
   position: fixed;
   top: 0;
-  right: -100%; /* Escondido */
-  width: 100%; /* Mobile: Ocupa tela toda */
+  right: -100%;
+  width: 100%;
   height: 100%;
   background-color: #1a1a1a;
   z-index: 2000;
@@ -761,18 +937,15 @@ h2.section-title::after {
   padding: 20px;
   border-left: 1px solid #333;
 }
-
 @media (min-width: 480px) {
   .cart-sidebar {
-    width: 350px; /* PC: Largura fixa */
+    width: 350px;
     right: -400px;
   }
 }
-
 .cart-sidebar.open {
   right: 0;
 }
-
 .cart-header {
   display: flex;
   justify-content: space-between;
@@ -781,12 +954,10 @@ h2.section-title::after {
   padding-bottom: 15px;
   margin-bottom: 15px;
 }
-
 .cart-items-container {
   flex: 1;
   overflow-y: auto;
 }
-
 .cart-item-row {
   display: flex;
   justify-content: space-between;
@@ -796,19 +967,16 @@ h2.section-title::after {
   margin-bottom: 10px;
   border-radius: 5px;
 }
-
 .remove-btn {
   background: transparent;
   border: none;
   color: var(--color-red);
   cursor: pointer;
 }
-
 .cart-footer {
   border-top: 1px solid #333;
   padding-top: 20px;
 }
-
 .cart-total {
   display: flex;
   justify-content: space-between;
@@ -816,7 +984,6 @@ h2.section-title::after {
   font-weight: bold;
   margin-bottom: 15px;
 }
-
 .cart-overlay {
   position: fixed;
   top: 0;
@@ -827,1543 +994,122 @@ h2.section-title::after {
   z-index: 1999;
   display: none;
 }
-
 .cart-overlay.open {
   display: block;
 }
-
-/* --- FOOTER --- */
-footer {
-  background-color: #000;
-  padding: var(--spacing-lg) 0;
-  text-align: center;
-  margin-top: var(--spacing-xl);
-  border-top: 1px solid #222;
-}
-
-/* =========================================
-   AJUSTE ESPECÍFICO PARA COMBOS
-   ========================================= */
-
-/* Deixa o cartão do combo mais largo que o do hambúrguer normal */
-.combo-item {
-  max-width: 600px !important; /* Aumenta de 400px para 600px */
-  border: 1px solid var(--color-gold); /* Destaque extra com borda dourada */
-}
-
-/* Ajusta a imagem para ficar proporcional ao tamanho novo */
-.combo-item .menu-img {
-  height: auto; /* Aumenta a altura da foto (antes era 200px) */
-}
-
-/* Ajuste para telas médias (Tablets/Laptops pequenos) */
-@media (min-width: 769px) {
-  /* Se estiver usando Grid, faz o combo ocupar 2 colunas para caber melhor */
-  .combo-item {
-    grid-column: span 2;
-  }
-}
-
-/* No celular, garantimos que ele não estoure a tela */
-@media (max-width: 768px) {
-  .combo-item {
-    max-width: 100% !important;
-    grid-column: auto; /* Volta ao normal no celular */
-  }
-
-  .combo-item .menu-img {
-    height: auto; /* Altura um pouco menor no celular */
-  }
-}
-/* --- FOOTER COMPLETO --- */
-footer {
-  background-color: #0d0d0d; /* Quase preto, para diferenciar do fundo normal */
-  color: #ccc;
-  padding-top: 60px;
-  padding-bottom: 20px;
-  border-top: 1px solid #333;
-  margin-top: 60px;
-}
-
-.footer-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 40px;
-  margin-bottom: 40px;
-  text-align: left;
-}
-
-.footer-col h3 {
-  color: #fff;
-  margin-bottom: 15px;
-  font-size: 1.5rem;
-}
-
-.footer-col h4 {
-  color: var(--color-gold);
-  margin-bottom: 15px;
-  font-size: 1.1rem;
-  border-bottom: 2px solid #333;
-  display: inline-block;
-  padding-bottom: 5px;
-}
-
-.footer-links {
-  list-style: none;
-}
-
-.footer-links li {
-  margin-bottom: 10px;
-}
-
-.footer-links a {
-  color: #ccc;
-  text-decoration: none;
-  transition: 0.3s;
-}
-
-.footer-links a:hover {
-  color: var(--color-gold);
-  padding-left: 5px; /* Efeitinho de mover para o lado */
-}
-
-/* Ícones de Pagamento */
-.payment-icons {
-  display: flex;
-  gap: 15px;
-  margin-top: 10px;
-  font-size: 1.5rem;
-  color: #fff;
-}
-
-/* Barra Final (Legal) */
-.footer-bottom {
-  border-top: 1px solid #222;
-  padding-top: 20px;
-  text-align: center;
-  font-size: 0.85rem;
-}
-
-.legal-text {
-  opacity: 0.6; /* Deixa o texto legal mais discreto */
-  margin-top: 5px;
-  font-size: 0.8rem;
-}
-
-/* Ajuste Mobile */
-@media (max-width: 768px) {
-  .footer-content {
-    text-align: center;
-  }
-
-  .payment-icons {
-    justify-content: center;
-  }
-}
-
-/* --- SELETOR DE QUANTIDADE --- */
-.quantity-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 15px; /* Espaço antes do botão Adicionar */
-
-  padding: 5px;
-  border-radius: 5px;
-  width: 100%;
-}
-
-.qty-btn {
-  /* 1. Trava as medidas exatas */
-  width: 35px !important; /* Usei !important para garantir */
-  height: 35px !important;
-  min-width: 35px !important; /* Proíbe ficar menor que isso */
-  max-width: 35px !important; /* Proíbe ficar maior que isso */
-
-  /* 2. Proíbe o flexbox de "amassar" o botão */
-  flex-shrink: 0;
-
-  /* 3. Zera espaços internos que causam deformação */
-  padding: 0;
-  margin: 0;
-
-  /* 4. Estilo Visual */
-  background-color: transparent;
-  border: 1px solid var(--color-gold);
-  color: var(--color-gold);
-  border-radius: 50%; /* Faz virar bola */
-  cursor: pointer;
-
-  /* 5. Alinhamento do + e - */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  line-height: 0; /* Remove altura de linha invisível */
-  transition: 0.2s;
-}
-
-.qty-btn:hover {
-  background-color: var(--color-gold);
-  color: var(--color-black);
-}
-
-.qty-btn-combo {
-  /* 1. Trava as medidas exatas */
-  width: 35px !important; /* Usei !important para garantir */
-  height: 35px !important;
-  min-width: 35px !important; /* Proíbe ficar menor que isso */
-  max-width: 35px !important; /* Proíbe ficar maior que isso */
-
-  /* 2. Proíbe o flexbox de "amassar" o botão */
-  flex-shrink: 0;
-
-  /* 3. Zera espaços internos que causam deformação */
-  padding: 0;
-  margin: 0;
-
-  /* 4. Estilo Visual */
-  background-color: transparent;
-  border: 1px solid #ee4b2b;
-  color: #ee4b2b;
-  border-radius: 50%; /* Faz virar bola */
-  cursor: pointer;
-
-  /* 5. Alinhamento do + e - */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  line-height: 0; /* Remove altura de linha invisível */
-  transition: 0.2s;
-}
-
-.qty-btn-combo:hover {
-  background-color: red;
-  color: var(--color-black);
-}
-
-.qty-display {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #fff;
-  width: 30px;
-  text-align: center;
-}
-/* Animação do Pulo e Brilho */
-@keyframes cart-pop {
-  /* 0% - Estado Inicial */
-  0% {
-    transform: scale(1);
-    background-color: transparent;
-    color: var(--color-cream);
-  }
-
-  /* 20% - O Pulo (Rápido e Dourado) */
-  20% {
-    transform: scale(1.2);
-    background-color: var(--color-gold);
-    color: var(--color-black);
-    border-color: var(--color-gold);
-    box-shadow: 0 0 15px var(--color-gold);
-  }
-
-  /* 100% - A Volta (Lenta até o final) */
-  100% {
-    transform: scale(1);
-    background-color: transparent; /* Volta a ficar transparente */
-    color: var(--color-cream); /* Volta a cor do texto original */
-    border-color: var(--color-gold); /* Borda original */
-    box-shadow: none;
-  }
-}
-
-/* Classe da animação */
-.cart-bump {
-  /* 1s de duração garante que a volta (dos 20% aos 100%) seja bem suave */
-  animation: cart-pop 1s ease-out;
-}
-/* --- BOTÕES DE QUANTIDADE (DENTRO DO CARRINHO) --- */
-.cart-qty-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: #333;
-  padding: 5px 10px;
-  border-radius: 5px;
-}
-
-.cart-qty-controls span {
-  color: #fff;
-  font-weight: bold;
-  min-width: 20px;
-  text-align: center;
-}
-
-.cart-qty-controls button {
-  background: transparent;
-  border: none;
-  color: var(--color-gold);
-  font-size: 1.1rem;
-  cursor: pointer;
-  width: 25px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.2s;
-}
-
-.cart-qty-controls button:hover {
-  color: #fff;
-  transform: scale(1.2);
-}
-
-/* Destaque para o ícone de lixeira quando for remover */
-.cart-qty-controls button i {
-  font-size: 0.9rem;
-  color: var(--color-red);
-}
-
-/* --- MODAL DE PERSONALIZAÇÃO --- */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  z-index: 3000; /* Acima de tudo */
-  display: none; /* Escondido por padrão */
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal-content {
-  background: #1a1a1a;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh; /* Não ultrapassa a altura da tela */
-  border-radius: 15px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #333;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* Header com Imagem de Fundo */
-.modal-header {
-  height: 150px;
-  position: relative;
-  background: #000;
-}
-
-.modal-header img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.7;
-}
-
-.close-modal {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: auto;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  width: 35px;
-  height: 35px;
+.close-cart {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-/* Corpo com Rolagem */
-.modal-body {
-  padding: 20px;
-  overflow-y: auto; /* Permite rolar só o meio */
-  flex: 1;
-}
-
-.modal-section-title {
-  color: var(--color-gold);
-  margin: 20px 0 10px 0;
-  border-bottom: 1px solid #333;
-  padding-bottom: 5px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 1rem;
-}
-
-.required-tag {
-  background: #d93025;
-  color: white;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.optional-tag {
-  background: #333;
-  color: #ccc;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-/* Lista de Opções */
-.option-row {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #2a2a2a;
-  cursor: pointer;
-}
-
-.option-row:hover {
-  background: #252525;
-}
-
-.option-row input {
-  margin-right: 15px;
-  transform: scale(1.3); /* Aumenta a bolinha/quadrado */
-  accent-color: var(--color-gold);
-}
-
-.option-info {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
-}
-.option-price {
-  color: var(--color-gold);
-  font-weight: bold;
-}
-
-/* Rodapé Fixo */
-.modal-footer {
-  padding: 15px 20px;
-  background: #222;
-  border-top: 1px solid #333;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  line-height: 1;
+  padding-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.close-cart:hover {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 0 15px rgba(217, 48, 37, 0.5);
+}
+.close-cart:active {
+  transform: scale(0.9);
 }
 
-.price-box {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  color: #ccc;
+/* --- RESPONSIVIDADE GERAL MANTIDA --- */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+  }
+  .nav-links.active {
+    display: flex;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .nav-right {
+    gap: 10px;
+  }
+  .btn-login-header {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .logo img {
+    height: 40px;
+  }
+  .logo-text {
+    font-size: 1rem;
+  }
+  .status-box {
+    display: none;
+  }
+  .about-content {
+    flex-direction: column;
+  }
+  .contact-wrapper {
+    flex-direction: column;
+  }
 }
 
-#modal-total {
-  font-size: 1.3rem;
-  color: var(--color-gold);
-  font-weight: bold;
-}
-/* ==================================================
-   AJUSTES EXCLUSIVOS PARA COMPUTADOR (PC/Desktop)
-   ================================================== */
 @media (min-width: 769px) {
-  /* 1. O Container Pai (Header) */
-  /* Garante que os itens fiquem na linha e o logo não encolha */
+  .about-content {
+    flex-direction: row;
+  }
   #main-header .container {
     display: flex;
-    justify-content: flex-start; /* Alinha tudo à esquerda inicialmente */
+    justify-content: flex-start;
     align-items: center;
   }
-
   .container-titulo {
-    flex-shrink: 0; /* Proíbe o logo de ser esmagado */
+    flex-shrink: 0;
     margin-right: 20px;
   }
-
-  /* 2. A Área da Direita (Menu + Carrinho) */
   .nav-right {
-    flex: 1; /* MÁGICA: Faz essa área crescer e ocupar TODO o espaço vazio */
+    flex: 1;
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Joga o carrinho para a ponta direita */
+    justify-content: flex-end;
   }
-
-  /* 3. O Menu de Links (Início, Cardápio...) */
   .nav-links {
     display: flex;
     gap: 30px;
-
-    /* MÁGICA DO CENTRO: */
-    margin-left: auto; /* Empurra da esquerda */
-    margin-right: auto; /* Empurra da direita (isso centraliza ele no espaço disponível) */
+    margin-left: auto;
+    margin-right: auto;
   }
-
-  /* 4. O Carrinho */
   .cart-btn {
-    margin-left: 0; /* Remove margens antigas */
-    flex-shrink: 0; /* Não deixa o botão esmagar */
+    margin-left: 0;
+    flex-shrink: 0;
   }
-
-  /* Esconde o hamburger no PC */
   .hamburger {
     display: none;
   }
 }
 
-/* Botão de Fechar (X) Estilizado */
-.close-cart {
-  /* 1. Forma e Tamanho */
-  width: 40px;
-  height: 40px;
-  border-radius: 50%; /* Faz virar uma bolinha perfeita */
-
-  /* 2. Cores Iniciais */
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.1
-  ); /* Fundo cinza transparente sutil */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
-  color: #fff;
-
-  /* 3. Alinhamento do X */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* 4. Tipografia */
-  font-size: 1.8rem;
-  line-height: 1;
-  padding-bottom: 4px; /* Ajuste fino para o X ficar exatamente no meio vertical */
-
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação com "pulo" elástico */
-}
-
-/* Efeito ao passar o mouse (Hover) */
-.close-cart:hover {
-  background-color: var(--color-red); /* Fica vermelho (cor de fechar/perigo) */
-  border-color: var(--color-red);
-  transform: rotate(90deg) scale(1.1); /* Gira 90 graus e cresce um pouco */
-  box-shadow: 0 0 15px rgba(217, 48, 37, 0.5); /* Brilho vermelho suave */
-}
-
-/* Efeito ao clicar (Active) */
-.close-cart:active {
-  transform: scale(0.9); /* Encolhe levemente ao clicar */
-}
-
-/* --- VALIDAÇÃO DE FORMULÁRIO --- */
-.input-error {
-  border-color: #ff4444 !important; /* Borda vermelha */
-  animation: shake 0.3s; /* Treme o campo */
-}
-
-.error-text {
-  color: #ff4444;
-  font-size: 0.8rem;
-  margin-top: -10px;
-  margin-bottom: 10px;
-  display: block;
-}
-
-/* Animação de tremer */
-@keyframes shake {
-  0% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-  75% {
-    transform: translateX(-5px);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-/* --- CORREÇÃO VISUAL DOS COMBOS --- */
-.carousel {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-lg);
-  width: 100%;
-}
-
-/* No PC, mostra em grade (igual ao menu) */
-@media (min-width: 600px) {
-  .carousel {
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(350px, 1fr)
-    ); /* Um pouco mais largo que o menu normal */
-  }
-}
-
-/* Opcional: Se quiser que os combos sejam realmente um carrossel de deslizar no celular */
-/*@media (max-width: 600px) {
-  .carousel {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 20px;
-  }
-
-  .carousel .menu-item {
-    min-width: 85vw;
-    scroll-snap-align: center;
-  }
-} 
-*/
-/* --- PREVENÇÃO DE CLS (Layout Shift) --- */
-
-/* Reserva espaço para o cardápio enquanto carrega */
-#menu-grid {
-  min-height: 600px; /* Altura estimada de uns 2 ou 3 lanches */
-}
-
-/* Reserva espaço para os combos */
-.carousel {
-  min-height: 400px;
-}
-/* --- CHECKBOX RETIRADA NO LOCAL --- */
-
-/* --- CHECKBOX RETIRADA NO LOCAL (Final) --- */
-.pickup-option {
-  margin: 15px 0;
-  background: transparent;
-  border: none;
-  padding: 5px 0;
-}
-
-/* 1. O PAI: Força tudo a ficar na mesma linha */
-.checkbox-container {
-  display: flex !important; /* !important garante que nada quebre isso */
-  flex-direction: row; /* Garante a direção linha */
-  align-items: center; /* Centraliza verticalmente */
-  cursor: pointer;
-  color: var(--color-gold);
-  gap: 10px; /* Espaço entre quadrado e texto */
-}
-
-/* 2. O QUADRADO (Input) */
-.checkbox-container input {
-  -webkit-appearance: none;
-  appearance: none;
-
-  /* Tamanho e Forma */
-  width: 22px;
-  height: 22px;
-  min-width: 22px; /* Trava o tamanho mínimo */
-  border: 2px solid var(--color-gold);
-  border-radius: 6px;
-
-  /* Centraliza o check dentro do quadrado */
-  display: grid;
-  place-content: center;
-
-  margin: 0;
-  cursor: pointer;
-  background-color: transparent;
-  transition: all 0.2s ease-in-out;
-}
-
-/* Check marcado */
-.checkbox-container input:checked {
-  background-color: var(--color-gold);
-}
-
-/* O símbolo "V" */
-.checkbox-container input::before {
-  content: "✔";
-  color: var(--color-black);
-  font-size: 14px;
-  font-weight: 900;
-  transform: scale(0);
-  transition: 0.2s transform ease-in-out;
-}
-
-.checkbox-container input:checked::before {
-  transform: scale(1);
-}
-
-/* 3. O TEXTO */
-.checkbox-container .label-text {
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1;
-
-  /* Ajuste fino de altura */
-  position: relative;
-  top: 2px; /* Ajuste aqui se precisar subir ou descer */
-}
-
-/* Remove check padrão antigo se existir */
-.checkmark {
-  display: none;
-}
-
-/* 4. ANIMAÇÃO DE BLOQUEIO */
-.address-disabled {
-  opacity: 0.4;
-  pointer-events: none;
-  filter: grayscale(1);
-  transition: all 0.3s ease;
-}
-
-.address-disabled input {
-  background-color: #222 !important;
-  color: #555 !important;
-  border-color: #333 !important;
-}
-
-/* --- STATUS DE FUNCIONAMENTO (Aberto/Fechado) --- */
-
-/* Ajuste do container do logo para empilhar o texto */
-.brand-wrapper {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-left: 10px;
-}
-
-.status-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  margin-top: -5px; /* Aproxima do título */
-  font-weight: 500;
-}
-
-/* A Bolinha */
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  transition: all 0.3s ease;
-}
-
-/* Estilo Aberto (Verde Neon) */
-.status-open .status-dot {
-  background-color: #2ecc71;
-  box-shadow: 0 0 8px #2ecc71; /* Brilho */
-  animation: pulse-green 2s infinite;
-}
-
-.status-open .status-text {
-  color: #2ecc71;
-}
-
-/* Estilo Fechado (Vermelho) */
-.status-closed .status-dot {
-  background-color: #e74c3c;
-  box-shadow: 0 0 8px #e74c3c;
-  animation: pulse-red 2s infinite;
-}
-
-.status-closed .status-text {
-  color: #e74c3c;
-}
-
-/* Animação de "Respiração" da bolinha verde */
-@keyframes pulse-green {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
-  }
-}
-
-@keyframes pulse-red {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(231, 76, 60, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
-  }
-}
-
-/* Ajuste Mobile para não quebrar o header */
-@media (max-width: 768px) {
-  .brand-wrapper {
-    margin-left: 5px;
-  }
-  .status-box {
-    font-size: 0.75rem;
-  }
-}
-
-/* --- BOTÃO LOGIN HEADER --- */
-.btn-login-outline {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: var(--color-cream);
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.btn-login-outline:hover {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-}
-
-/* --- AVATAR PERFIL --- */
-.profile-wrapper {
-  position: relative;
-}
-.avatar-circle {
-  width: 40px;
-  height: 40px;
-  background-color: var(--color-gold);
-  color: var(--color-black);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  cursor: pointer;
-  border: 2px solid #fff;
-  transition: 0.2s;
-}
-.avatar-circle:hover {
-  transform: scale(1.1);
-}
-
-/* Dropdown Menu */
-.profile-dropdown {
-  display: none; /* JS controla isso */
-  position: absolute;
-  top: 50px;
-  right: 0;
-  background-color: #222;
-  border: 1px solid #444;
-  border-radius: 8px;
-  width: 200px;
-  padding: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-  z-index: 1002;
-}
-.profile-dropdown.active {
-  display: block;
-}
-.dropdown-header {
-  margin-bottom: 10px;
-}
-.dropdown-header strong {
-  display: block;
-  color: #fff;
-}
-.dropdown-header small {
-  color: #888;
-}
-.profile-dropdown hr {
-  border: 0;
-  border-top: 1px solid #444;
-  margin: 10px 0;
-}
-.profile-dropdown a {
-  display: block;
-  color: #ccc;
-  text-decoration: none;
-  padding: 8px 0;
-  font-size: 0.95rem;
-  transition: 0.2s;
-}
-.profile-dropdown a:hover {
-  color: var(--color-gold);
-  padding-left: 5px;
-}
-
-/* --- MODAL AUTH --- */
-.auth-modal {
-  max-width: 400px;
-  padding: 30px;
-  background: #1a1a1a;
-}
-.auth-tabs {
-  display: flex; /* Coloca um ao lado do outro */
-  justify-content: space-between; /* Espalha eles */
-  gap: 5px; /* Espacinho entre eles */
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.tab-btn {
-  flex: 1; /* Faz todos terem a mesma largura (divisão justa) */
-  white-space: nowrap; /* 🔥 O PULO DO GATO: Proíbe quebrar linha */
-  padding: 10px 0; /* Menos padding lateral para caber */
-  font-size: 0.85rem; /* Fonte um pouco menor para garantir */
-  text-align: center;
-  background: transparent;
-  border: 1px solid #444;
-  color: #ccc;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.3s;
-  position: relative;
-  z-index: 1;
-  background: transparent;
-  color: #ccc;
-}
-
-.tab-btn.active {
-  background-color: var(--color-gold) !important; /* Fundo Dourado */
-  color: #000 !important; /* 🔥 Texto PRETO para dar leitura */
-  border-color: var(--color-gold);
-  font-weight: 800; /* Texto bem grosso */
-  z-index: 2;
-  opacity: 1;
-}
-.full-width {
-  width: 100%;
-}
-.mt-2 {
-  margin-top: 0.5rem;
-}
-.mt-3 {
-  margin-top: 1rem;
-}
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-/* --- CHECKOUT FORM --- */
-.checkout-wrapper {
-  background-color: #222;
-  padding: 25px;
-  border-radius: 10px;
-  border: 1px solid #333;
-}
-.address-box {
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 15px;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-.address-box h4 {
-  color: var(--color-gold);
-  margin-bottom: 15px;
-  border-bottom: 1px solid #444;
-  padding-bottom: 5px;
-}
-.actions-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-.btn-lg {
-  flex: 1; /* Ocupa espaço principal */
-  font-size: 1.1rem;
-  padding: 15px;
-}
-.btn-whts-icon {
-  background-color: #25d366;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  width: 50px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.btn-whts-icon:hover {
-  background-color: #128c7e;
-}
-.secure-text {
-  text-align: center;
-  font-size: 0.8rem;
-  color: #666;
-  margin-top: 10px;
-}
-/* =========================================
-   [NOVO] ESTILOS DE AUTENTICAÇÃO E PERFIL
-   Cole isso no final do seu arquivo style.css
-   ========================================= */
-
-/* --- 1. BOTÃO DE LOGIN (NO HEADER) --- */
-.btn-login-header {
-  background: transparent;
-  color: var(--color-cream);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 6px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: var(--transition);
-}
-
-.btn-login-header:hover {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-}
-
-/* --- 2. ÁREA DO PERFIL (QUANDO LOGADO) --- */
-.profile-container {
-  position: relative;
-  margin-left: 30px;
-}
-
-.profile-icon {
-  width: 38px;
-  height: 38px;
-  background-color: var(--color-gold);
-  color: var(--color-black);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  cursor: pointer;
-  border: 2px solid #fff;
-  transition: var(--transition);
-}
-
-.profile-icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(242, 201, 76, 0.5);
-}
-
-/* Menu Dropdown do Perfil */
-.profile-menu {
-  display: none; /* O JS controla isso com a classe .active */
-  position: absolute;
-  top: 50px;
-  right: -20px; /* Alinha com a direita do ícone */
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 8px;
-  width: 180px;
-  padding: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
-  text-align: center;
-  z-index: 1100;
-}
-
-.profile-menu.active {
-  display: block;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.profile-menu span {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: bold;
-  color: var(--color-gold);
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-menu hr {
-  border: 0;
-  border-top: 1px solid #444;
-  margin: 10px 0;
-}
-
-.profile-menu a {
-  color: #fff;
-  text-decoration: none;
-  font-size: 0.9rem;
-  display: block;
-  padding: 8px 0;
-  transition: 0.2s;
-  border-radius: 4px;
-}
-
-.profile-menu a:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--color-red);
-}
-
-/* --- 3. MODAL DE LOGIN/CADASTRO --- */
-/* Ajuste específico para o modal de auth ser menor que o de produto */
-.auth-content {
-  max-width: 400px;
-  min-height: 450px;
-  padding: 30px;
-  background-color: #1a1a1a;
-}
-
-/* Abas (Login | Cadastro) */
-.auth-tabs {
-  display: flex;
-  border-bottom: 1px solid #333;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-.tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  color: #666;
-  padding: 12px;
-  font-size: 1rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: 0.3s;
-  font-family: var(--font-main);
-}
-
-.tab-btn:hover {
-  color: #ccc;
-}
-
-.tab-btn.active {
-  color: var(--color-gold);
-  border-bottom-color: var(--color-gold);
-  font-weight: bold;
-}
-
-/* Formulários dentro do Modal */
-.auth-form {
-  display: none; /* Esconde todos por padrão */
-  animation: fadeIn 0.3s;
-}
-
-.auth-form.active {
-  display: block; /* Mostra apenas o ativo */
-}
-
-.auth-form h3 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #fff;
-  font-size: 1.3rem;
-}
-
-/* Utilitários para os forms */
-.full-width {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-.mt-3 {
-  margin-top: 1rem;
-}
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-/* Detalhes (Endereço Opcional) */
-details summary {
-  color: var(--color-gold);
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-bottom: 10px;
-  list-style: none; /* Remove triângulo padrão em alguns browsers */
-}
-details summary:hover {
-  text-decoration: underline;
-}
-
-/* --- 4. PÁGINA DE LOGIN DEDICADA (login.html) --- */
-body.login-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  /* Garante que a imagem de fundo cubra tudo */
-  background: url("../assets/principal.jpg") no-repeat center center;
-  background-size: cover;
-  position: relative;
-}
-
-/* Camada escura sobre a imagem de fundo */
-body.login-page::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 0;
-}
-
-.login-overlay {
-  position: relative;
-  z-index: 1; /* Fica acima da camada escura */
-  background-color: rgba(26, 26, 26, 0.9);
-  padding: 40px;
-  border-radius: 15px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
-  border: 1px solid #444;
-  backdrop-filter: blur(10px);
-}
-
-.login-logo {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-/* --- ANIMAÇÃO SIMPLES --- */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.address-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.address-card {
-  background: #222;
-  border: 1px solid #444;
-  padding: 15px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: 0.3s;
-}
-
-.address-card.active {
-  border-color: #2ecc71; /* Verde para ativo */
-  background: rgba(46, 204, 113, 0.05);
-}
-
-.address-card strong {
-  color: #fff;
-}
-.address-card small {
-  color: #aaa;
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 0.8rem;
-}
-
-/* --- LISTA DE PEDIDOS --- */
-.orders-list {
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  background-color: #151515;
-  min-height: 300px;
-}
-
-.order-card {
-  background-color: #222;
-  border: 1px solid #333;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: 0.2s;
-}
-.order-card:hover {
-  border-color: #444;
-  transform: translateY(-2px);
-}
-
-/* Cabeçalho do Card (ID, Data e Status) */
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid #333;
-}
-.order-id {
-  display: block;
-  font-weight: bold;
-  color: #fff;
-  font-size: 0.95rem;
-}
-.order-date {
-  font-size: 0.75rem;
-  color: #888;
-}
-
-/* Badges de Status */
-.status-badge {
-  font-size: 0.8rem;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.st-received {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  border: 1px solid #555;
-}
-.st-prep {
-  background: rgba(241, 196, 15, 0.15);
-  color: #f1c40f;
-  border: 1px solid #f1c40f;
-}
-.st-delivery {
-  background: rgba(230, 126, 34, 0.15);
-  color: #e67e22;
-  border: 1px solid #e67e22;
-}
-.st-done {
-  background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
-  border: 1px solid #2ecc71;
-}
-.st-canceled {
-  background: rgba(231, 76, 60, 0.15);
-  color: #e74c3c;
-  border: 1px solid #e74c3c;
-}
-
-/* Corpo (Lista de Itens) */
-.order-body {
-  padding: 15px;
-}
-.order-item-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-  font-size: 0.9rem;
-  color: #ddd;
-  border-bottom: 1px solid #2a2a2a;
-  padding-bottom: 5px;
-}
-.order-item-row:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-/* Rodapé (Total) */
-.order-footer {
-  padding: 12px 15px;
-  background-color: rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #333;
-}
-.order-total {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: var(--color-gold);
-}
-/* --- VALIDAÇÃO DE SENHA --- */
-.password-strength {
-  display: block;
-  font-size: 0.75rem;
-  margin-top: 5px;
-  height: 15px; /* Reserva espaço */
-  transition: 0.3s;
-}
-
-.strength-weak {
-  color: #ff4444;
-}
-.strength-medium {
-  color: #f1c40f;
-}
-.strength-strong {
-  color: #2ecc71;
-}
-
-/* --- CHAT WIDGET --- */
-.chat-widget {
-  position: fixed;
-  bottom: 0;
-  left: 20px; /* Canto Inferior Esquerdo */
-  right: auto;
-  width: 300px;
-  background-color: #1a1a1a;
-  border-radius: 10px 10px 0 0;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-  z-index: 5000;
-  border: 1px solid #333;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.3s ease;
-}
-
-/* Estado Minimizado (Escondido pra baixo) */
-.chat-widget.minimized {
-  transform: translateY(calc(100% - 48px)); /* Altura do corpo + footer */
-}
-
-/* Cabeçalho */
-.chat-header {
-  background-color: var(--color-red);
-  color: white;
-  padding: 12px 15px;
-  border-radius: 10px 10px 0 0;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-}
-
-/* Corpo */
-.chat-body {
-  height: 280px;
-  padding: 15px;
-  overflow-y: auto;
-  background-color: #111;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Mensagens */
-.msg {
-  padding: 8px 12px;
-  border-radius: 15px;
-  max-width: 80%;
-  font-size: 0.9rem;
-  word-wrap: break-word;
-}
-
-.msg-user {
-  background-color: var(--color-gold);
-  color: #000;
-  align-self: flex-end; /* Direita */
-  border-bottom-right-radius: 2px;
-}
-
-.msg-admin {
-  background-color: #333;
-  color: #fff;
-  align-self: flex-start; /* Esquerda */
-  border-bottom-left-radius: 2px;
-  border: 1px solid #444;
-}
-
-/* Footer */
-.chat-footer {
-  padding: 10px;
-  background-color: #222;
-  display: flex;
-  gap: 10px;
-  border-top: 1px solid #333;
-}
-
-.chat-footer input {
-  flex: 1;
-  padding: 8px;
-  border-radius: 20px;
-  border: 1px solid #444;
-  background: #000;
-  color: #fff;
-  outline: none;
-}
-
-.chat-footer button {
-  background: transparent;
-  border: none;
-  color: var(--color-gold);
-  cursor: pointer;
-  font-size: 1.2rem;
-}
-
-.chat-welcome {
-  text-align: center;
-  color: #666;
-  font-size: 0.8rem;
-  margin-top: 10px;
-}
-/* --- PAGAMENTO --- */
-.payment-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.payment-option input {
-  display: none; /* Esconde a bolinha padrão */
-}
-
-.payment-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background-color: #222;
-  border: 1px solid #444;
-  border-radius: 8px;
-  color: #ccc;
-  cursor: pointer;
-  transition: 0.2s;
-  font-size: 0.9rem;
-}
-
-.payment-option input:checked + .payment-box {
-  background-color: rgba(242, 201, 76, 0.1);
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-  font-weight: bold;
-}
-
-.payment-box:hover {
-  border-color: #666;
-}
-/* --- TOAST NOTIFICATIONS (AVISOS) --- */
+/* --- TOASTS, MODAIS E EXTRAS DO ARQUIVO ORIGINAL (MANTIDOS) --- */
 #toast-container {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 9999; /* Acima de tudo, inclusive modais */
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-
 .toast {
   min-width: 250px;
   max-width: 350px;
@@ -2379,31 +1125,26 @@ body.login-page::before {
   border-left: 5px solid #fff;
   opacity: 0;
   transform: translateX(100%);
-  animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 4s; /* Entra e sai sozinho */
+  animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 4s;
 }
-
-/* Tipos de Toast */
 .toast.success {
   border-left-color: #2ecc71;
 }
 .toast.success i {
   color: #2ecc71;
 }
-
 .toast.error {
   border-left-color: #e74c3c;
 }
 .toast.error i {
   color: #e74c3c;
 }
-
 .toast.warning {
   border-left-color: #f1c40f;
 }
 .toast.warning i {
   color: #f1c40f;
 }
-
 @keyframes slideIn {
   to {
     opacity: 1;
@@ -2417,271 +1158,1522 @@ body.login-page::before {
   }
 }
 
-/* site/css/style.css - Adicione ao final */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 3000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal-content {
+  background: #1a1a1a;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #333;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.modal-header {
+  height: 150px;
+  position: relative;
+  background: #000;
+}
+.modal-header img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+}
+.close-modal {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-footer {
+  padding: 15px 20px;
+  background: #222;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-row {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #2a2a2a;
+  cursor: pointer;
+}
+.option-row:hover {
+  background: #252525;
+}
+.option-row input {
+  margin-right: 15px;
+  transform: scale(1.3);
+  accent-color: var(--color-gold);
+}
 
-.coupons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+/* --- STATUS BOX E ANIMAÇÕES --- */
+.status-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  margin-top: -5px;
+  font-weight: 500;
+}
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+.status-open .status-dot {
+  background-color: #2ecc71;
+  box-shadow: 0 0 8px #2ecc71;
+  animation: pulse-green 2s infinite;
+}
+.status-open .status-text {
+  color: #2ecc71;
+}
+.status-closed .status-dot {
+  background-color: #e74c3c;
+  box-shadow: 0 0 8px #e74c3c;
+  animation: pulse-red 2s infinite;
+}
+.status-closed .status-text {
+  color: #e74c3c;
+}
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(231, 76, 60, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+/* =========================================
+   PERSONALIZAÇÃO: REDES SOCIAIS (.social-links)
+   ========================================= */
+
+/* Container dos Links */
+.social-links {
+  display: flex;
+  flex-direction: column; /* Lista vertical */
+  gap: 15px; /* Espaço entre os botões */
+  margin-top: 25px;
+  width: 100%;
+}
+
+/* O Botão da Rede Social (Link) */
+.social-icon {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espaço entre ícone e texto */
+  padding: 12px 20px;
+
+  /* Estilo Glass (Vidro Escuro) */
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px; /* Cantos arredondados modernos */
+
+  color: #ccc; /* Texto cinza claro */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave */
+  position: relative;
+  overflow: hidden; /* Para efeitos de brilho */
+}
+
+/* Ícone dentro do botão */
+.social-icon i {
+  font-size: 1.4rem;
+  width: 30px; /* Largura fixa para alinhar textos */
+  text-align: center;
+  transition: 0.3s;
+  color: var(--color-gold); /* Ícones dourados por padrão */
+}
+
+/* --- EFEITOS DE HOVER (AO PASSAR O MOUSE) --- */
+
+/* Movimento Geral */
+.social-icon:hover {
+  transform: translateX(10px); /* Desliza para a direita */
+  background: rgba(255, 255, 255, 0.08); /* Fica mais claro */
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff; /* Texto fica branco */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Sombra suave */
+}
+
+/* Cores Específicas das Marcas (Usando os IDs que já existiam) */
+
+/* Instagram (Degradê ou Cor Sólida) */
+#insta:hover {
+  border-color: #e1306c;
+  box-shadow: 0 0 15px rgba(225, 48, 108, 0.2); /* Glow Rosa */
+}
+#insta:hover i {
+  color: #e1306c;
+  transform: scale(1.2) rotate(5deg); /* Ícone cresce e gira */
+  text-shadow: 0 0 8px rgba(225, 48, 108, 0.6);
+}
+
+/* Facebook */
+#face:hover {
+  border-color: #1877f2;
+  box-shadow: 0 0 15px rgba(24, 119, 242, 0.2); /* Glow Azul */
+}
+#face:hover i {
+  color: #1877f2;
+  transform: scale(1.2) rotate(-5deg);
+  text-shadow: 0 0 8px rgba(24, 119, 242, 0.6);
+}
+
+/* WhatsApp */
+#wa:hover {
+  border-color: #25d366;
+  box-shadow: 0 0 15px rgba(37, 211, 102, 0.2); /* Glow Verde */
+}
+#wa:hover i {
+  color: #25d366;
+  transform: scale(1.2);
+  text-shadow: 0 0 8px rgba(37, 211, 102, 0.6);
+}
+
+/* Responsividade: No PC pode ficar lado a lado se quiser */
+@media (min-width: 1024px) {
+  .social-links {
+    flex-direction: row; /* Lado a lado em telas grandes */
+    flex-wrap: wrap;
+  }
+  .social-icon {
+    flex: 1; /* Divide espaço igualmente */
+    min-width: 180px;
+    justify-content: center; /* Centraliza conteúdo */
+  }
+}
+
+/* =========================================
+   PERSONALIZAÇÃO: CHAT WIDGET (MODERNO)
+   ========================================= */
+
+/* --- CONTAINER PRINCIPAL --- */
+.chat-widget {
+  position: fixed;
+  bottom: 20px;
+  left: 20px; /* Fica no canto esquerdo inferior */
+  width: 320px; /* Largura confortável */
+  height: 400px; /* Altura total aberto */
+
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 16px; /* Cantos bem arredondados */
+
+  /* Sombra profunda para dar efeito flutuante */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Garante que nada saia das bordas redondas */
+
+  /* Animação suave de subir/descer */
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    height 0.4s ease;
+}
+
+/* --- ESTADO MINIMIZADO (FECHADO) --- */
+.chat-widget.minimized {
+  height: 60px; /* Altura apenas do cabeçalho */
+  transform: translateY(0); /* Mantém na posição, mas colapsa a altura */
+  border-radius: 30px; /* Vira uma "pílula" quando fechado */
+  width: 200px; /* Fica mais estreito quando fechado */
+  cursor: pointer;
+}
+
+/* Animação de "Chamar Atenção" quando fechado */
+.chat-widget.minimized:hover {
+  transform: translateY(-5px); /* Pula um pouquinho */
+  box-shadow: 0 0 20px rgba(217, 48, 37, 0.4); /* Glow vermelho */
+}
+
+/* --- CABEÇALHO DO CHAT --- */
+.chat-header {
+  background: linear-gradient(
+    135deg,
+    var(--color-red) 0%,
+    var(--color-red-dark) 100%
+  );
+  color: #fff;
+  padding: 15px 20px;
+  height: 60px; /* Altura fixa */
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chat-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.coupon-option {
-  display: none; /* Esconde o input radio real */
+.chat-header h4 i {
+  font-size: 1.2rem;
 }
 
-.coupon-card-ui {
-  background: #222;
-  border: 1px dashed #555;
-  border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Ícone de seta (Gira quando minimiza) */
+.toggle-icon {
+  transition: transform 0.3s ease;
+}
+.chat-widget.minimized .toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* --- CORPO DO CHAT (MENSAGENS) --- */
+.chat-body {
+  flex: 1; /* Ocupa todo espaço disponível */
+  background-color: #121212; /* Fundo mais escuro para contraste */
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  /* Scrollbar bonita */
+  scrollbar-width: thin;
+  scrollbar-color: #444 #121212;
+}
+
+/* Scrollbar Webkit (Chrome/Edge) */
+.chat-body::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-body::-webkit-scrollbar-track {
+  background: #121212;
+}
+.chat-body::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 10px;
+}
+
+/* --- BALÕES DE MENSAGEM --- */
+.msg {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
   position: relative;
-  opacity: 1;
+  word-wrap: break-word;
+  animation: popIn 0.3s ease-out;
 }
 
-/* Estado Selecionado */
-.coupon-option:checked + .coupon-card-ui {
-  background: rgba(242, 201, 76, 0.1);
+/* Mensagem do Admin/Sistema (Esquerda) */
+.msg-admin {
+  align-self: flex-start;
+  background-color: #2a2a2a;
+  color: #ddd;
+  border-bottom-left-radius: 2px; /* Pontinha do balão */
+  border: 1px solid #333;
+}
+
+/* Mensagem do Usuário (Direita) */
+.msg-user {
+  align-self: flex-end;
+  background-color: var(--color-gold);
+  color: #121212; /* Texto preto para leitura no dourado */
+  font-weight: 500;
+  border-bottom-right-radius: 2px; /* Pontinha do balão */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --- RODAPÉ (INPUT) --- */
+.chat-footer {
+  padding: 12px;
+  background-color: #1a1a1a;
+  border-top: 1px solid #333;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.chat-footer input {
+  flex: 1;
+  background-color: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 10px 15px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: 0.3s;
+}
+
+.chat-footer input:focus {
   border-color: var(--color-gold);
-  border-style: solid;
 }
 
+.chat-footer button {
+  background: transparent;
+  border: none;
+  color: var(--color-gold);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-footer button:hover {
+  transform: scale(1.1);
+  color: #fff;
+}
+/* =========================================
+   PERSONALIZAÇÃO: ENDEREÇO (Texto-info)
+   ========================================= */
+
+#Texto-info {
+  /* 1. Centralização e Tamanho */
+  text-align: center; /* Centraliza o texto */
+  width: 100%; /* Força ocupar a largura total disponível */
+  max-width: 900px; /* Limite para não ficar esticado demais em telas gigantes */
+  margin: 20px auto; /* Centraliza o bloco na tela e dá margem vertical */
+
+  /* 2. Visual "Card" Moderno */
+  background: rgba(255, 255, 255, 0.03); /* Fundo translúcido sutil */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Borda muito fina */
+  border-radius: 12px; /* Cantos arredondados */
+  padding: 30px 20px; /* Espaçamento interno generoso */
+
+  /* 3. Sombra suave para destacar do fundo */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  /* Animação leve ao aparecer */
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+/* Efeito ao passar o mouse no bloco inteiro */
+#Texto-info:hover {
+  border-color: rgba(242, 201, 76, 0.3); /* Borda fica levemente dourada */
+  transform: translateY(-5px); /* Flutua um pouco */
+}
+
+/* Título "Endereço" */
+.info-title {
+  color: var(--color-gold, #f2c94c); /* Usa sua variável dourada */
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 2px; /* Espaçamento entre letras elegante */
+  position: relative;
+  display: inline-block;
+}
+
+/* Linha decorativa abaixo do título */
+.info-title::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 3px;
+  background-color: var(--color-red, #d93025); /* Detalhe vermelho da marca */
+  margin: 10px auto 0; /* Centraliza a linha */
+  border-radius: 2px;
+}
+
+/* Linhas de Texto (Rua, Cidade, CEP) */
+.info-text {
+  color: #e0e0e0; /* Branco gelo para leitura fácil */
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Destaque sutil para o CEP ou última linha */
+.info-text:last-child {
+  color: #a0a0a0; /* Um pouco mais cinza para hierarquia */
+  font-size: 1rem;
+  margin-top: 15px;
+  font-weight: 600;
+}
+
+/* Responsividade: Ajuste para celulares */
+@media (max-width: 768px) {
+  #Texto-info {
+    width: 100%; /* Ocupa tudo no mobile */
+    padding: 20px;
+  }
+
+  .info-title {
+    font-size: 1.5rem;
+  }
+
+  .info-text {
+    font-size: 1rem;
+  }
+}
+
+/* =========================================
+   PERSONALIZAÇÃO: MENU DE PERFIL (#profile-menu)
+   ========================================= */
+
+#profile-menu {
+  display: none; /* Oculto por padrão (JS ativa) */
+  position: absolute;
+  top: 65px; /* Distância do topo (abaixo do ícone) */
+  right: -10px; /* Alinhamento com a direita */
+
+  /* Visual Premium */
+  background-color: #1a1a1a;
+  width: 240px; /* Largura um pouco maior */
+  border-radius: 12px;
+  border: 1px solid var(--color-gold); /* Borda Dourada */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); /* Sombra forte */
+
+  /* Centralização solicitada */
+  text-align: center;
+  padding: 20px;
+  z-index: 2000;
+
+  /* Animação de entrada */
+  transform-origin: top right;
+}
+
+#profile-menu.active {
+  display: block;
+  animation: menuPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- SETA APONTANDO PARA CIMA (Detalhe Visual) --- */
+#profile-menu::before {
+  content: "";
+  position: absolute;
+  top: -7px; /* Sobe para fora da caixa */
+  right: 25px; /* Alinha com o ícone de perfil */
+  width: 14px;
+  height: 14px;
+  background-color: #1a1a1a;
+  border-left: 1px solid var(--color-gold);
+  border-top: 1px solid var(--color-gold);
+  transform: rotate(45deg); /* Gira para fazer o triângulo */
+}
+
+/* --- CONTEÚDO INTERNO --- */
+
+/* Nome do Usuário */
+#profile-menu span {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin-bottom: 5px;
+
+  /* Garante que nomes longos não quebrem o layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Texto "Bem-vindo" ou secundário (se houver) */
+#profile-menu span small {
+  display: block;
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Linha Divisória */
+#profile-menu hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #444, transparent);
+  margin: 15px 0;
+}
+
+/* Links do Menu (Minha Conta, Sair, etc) */
+#profile-menu a {
+  display: block;
+  padding: 10px 15px;
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 5px;
+}
+
+/* Efeito Hover nos Links */
+#profile-menu a:hover {
+  background-color: rgba(242, 201, 76, 0.1); /* Fundo dourado transparente */
+  color: var(--color-gold);
+  transform: translateX(5px); /* Move levemente para indicar clique */
+}
+
+/* Ícone dentro do link (se houver <i class="...">) */
+#profile-menu a i {
+  margin-right: 8px;
+  color: #888;
+  transition: 0.2s;
+}
+
+#profile-menu a:hover i {
+  color: var(--color-gold);
+}
+
+/* Animação de Entrada */
+@keyframes menuPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Ajuste Mobile */
+@media (max-width: 768px) {
+  #profile-menu {
+    right: 50%;
+    transform: translateX(50%); /* Centraliza na tela do celular */
+    width: 280px;
+    top: 70px;
+  }
+
+  /* Ajusta a seta para o meio no mobile */
+  #profile-menu::before {
+    right: 50%;
+    margin-right: -7px;
+  }
+}
+/* =========================================
+   PERSONALIZAÇÃO: MODAL DE ENDEREÇOS (#modal-addresses)
+   ========================================= */
+
+/* Ajuste do Corpo do Modal para Endereços */
+#modal-addresses .modal-body {
+  padding: 25px;
+  background-color: #141414; /* Fundo interno levemente mais escuro */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- LISTA DE ENDEREÇOS (Scrollável) --- */
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 350px; /* Limite de altura */
+  overflow-y: auto; /* Scroll se tiver muitos endereços */
+  padding-right: 5px; /* Espaço para scrollbar */
+}
+
+/* Estilização da Scrollbar Fina */
+.address-list::-webkit-scrollbar {
+  width: 6px;
+}
+.address-list::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.address-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+/* --- CARTÃO DE ENDEREÇO (ITEM) --- */
+.address-card {
+  position: relative;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Hover no cartão */
+.address-card:hover {
+  background: #252525;
+  border-color: #666;
+  transform: translateX(5px); /* Efeito de deslizar levemente */
+}
+
+/* --- ESTADO SELECIONADO (ACTIVE) --- */
+/* Use essa classe via JS quando o usuário clicar */
+.address-card.active {
+  border-color: var(--color-gold);
+  background: rgba(242, 201, 76, 0.05); /* Fundo dourado bem suave */
+  box-shadow: 0 0 15px rgba(242, 201, 76, 0.15); /* Glow */
+}
+
+/* Ícone indicador (Casa/Trabalho) */
+.address-icon-box {
+  width: 40px;
+  height: 40px;
+  background: #121212;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #666;
+  margin-right: 15px;
+  transition: 0.3s;
+}
+
+.address-card.active .address-icon-box {
+  background: var(--color-gold);
+  color: #000;
+}
+
+/* Detalhes do Texto */
+.address-details {
+  flex: 1; /* Ocupa o meio */
+}
+
+.address-details strong {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.address-details small {
+  display: block;
+  color: #aaa;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Ações (Editar/Excluir) */
+.address-actions-btn {
+  display: flex;
+  gap: 10px;
+  margin-left: 10px;
+}
+
+.btn-icon-sm {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-icon-sm:hover {
+  background: #fff;
+  color: #000;
+}
+
+.btn-icon-sm.delete:hover {
+  background: var(--color-red);
+  border-color: var(--color-red);
+  color: #fff;
+}
+
+/* --- BOTÃO "ADICIONAR NOVO" --- */
+.btn-add-address {
+  width: 100%;
+  padding: 15px;
+  background: transparent;
+  border: 2px dashed #444; /* Borda tracejada indica "novo espaço" */
+  border-radius: 12px;
+  color: #888;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: 0.3s;
+  margin-top: 10px;
+}
+
+.btn-add-address:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: rgba(242, 201, 76, 0.05);
+}
+
+.btn-add-address i {
+  font-size: 1.2rem;
+}
+
+/* --- FORMULÁRIO DE NOVO ENDEREÇO (Se estiver dentro do modal) --- */
+#new-address-form {
+  display: none; /* JS deve mostrar isso com slideDown */
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  margin-top: 20px;
+  animation: fadeUp 0.3s ease;
+}
+
+#new-address-form.active {
+  display: block;
+}
+/* =========================================
+   PERSONALIZAÇÃO: HISTÓRICO DE PEDIDOS (#modal-orders)
+   ========================================= */
+
+/* Corpo do modal com rolagem */
+#modal-orders .modal-body {
+  padding: 20px;
+  background-color: #141414; /* Fundo interno escuro */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Container da Lista */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px; /* Espaço para scrollbar */
+}
+
+/* Scrollbar Personalizada */
+.orders-list::-webkit-scrollbar {
+  width: 6px;
+}
+.orders-list::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.orders-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+/* --- CARTÃO DE PEDIDO (Card Individual) --- */
+.order-card {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  overflow: hidden; /* Garante que nada saia das bordas */
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Efeito Hover */
+.order-card:hover {
+  transform: translateY(-3px);
+  border-color: #555;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* --- CABEÇALHO DO PEDIDO (#1234 - Data) --- */
+.order-header {
+  background-color: #252525;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.order-id {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-id i {
+  color: var(--color-gold);
+}
+
+.order-date {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+/* --- BADGES DE STATUS (Etiquetas Coloridas) --- */
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+/* Cores dos Status */
+.st-pending {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  border: 1px solid #555;
+} /* Pendente */
+.st-prep {
+  background: rgba(242, 201, 76, 0.15);
+  color: var(--color-gold);
+  border: 1px solid var(--color-gold);
+} /* Preparando */
+.st-delivery {
+  background: rgba(230, 126, 34, 0.15);
+  color: #e67e22;
+  border: 1px solid #e67e22;
+} /* Em Rota */
+.st-done {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid #2ecc71;
+} /* Entregue */
+.st-cancel {
+  background: rgba(217, 48, 37, 0.15);
+  color: var(--color-red);
+  border: 1px solid var(--color-red);
+} /* Cancelado */
+
+/* --- CORPO DO PEDIDO (Lista de Itens) --- */
+.order-body {
+  padding: 15px;
+}
+
+.order-items-summary {
+  font-size: 0.9rem;
+  color: #ddd;
+  line-height: 1.5;
+}
+
+.order-items-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.order-items-summary li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.order-items-summary li:last-child {
+  border-bottom: none;
+}
+
+/* --- RODAPÉ DO PEDIDO (Total e Botão) --- */
+.order-footer {
+  padding: 12px 15px;
+  background-color: #1a1a1a;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-total {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-total small {
+  color: #888;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.order-total strong {
+  color: var(--color-gold);
+  font-size: 1.1rem;
+}
+
+/* Botão "Ver Detalhes" ou "Repetir" */
+.btn-order-action {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-order-action:hover {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* =========================================
+   PERSONALIZAÇÃO: MODAL DE LOGIN/CADASTRO (#modal-auth)
+   ========================================= */
+
+/* Ajuste do Container do Modal */
+#modal-auth .modal-content {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  max-width: 420px; /* Um pouco mais estreito que o normal para focar */
+  margin: 0 auto;
+}
+
+#modal-auth .modal-body {
+  padding: 30px 40px;
+}
+
+/* Título de Boas-vindas */
+.auth-title {
+  text-align: center;
+  font-size: 1.5rem;
+  color: #fff;
+  margin-bottom: 5px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+/* --- ABAS DE NAVEGAÇÃO (Login | Cadastro) --- */
+.auth-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #333;
+  position: relative;
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 15px;
+  font-size: 1rem;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Efeito Hover */
+.tab-btn:hover {
+  color: #ccc;
+}
+
+/* Aba Ativa (Texto Dourado + Linha embaixo) */
+.tab-btn.active {
+  color: var(--color-gold);
+}
+
+/* A linha dourada mágica abaixo da aba ativa */
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px; /* Sobrepõe a borda cinza */
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-gold);
+  box-shadow: 0 -2px 10px rgba(242, 201, 76, 0.5); /* Glow */
+}
+
+/* --- FORMULÁRIOS (Inputs) --- */
+.auth-form {
+  display: none; /* Escondido por padrão */
+  animation: fadeSlide 0.4s ease-out;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.auth-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.auth-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-left: 5px;
+}
+
+/* Input com Ícone Integrado */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-gold);
+  font-size: 1.1rem;
+  transition: 0.3s;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 12px 15px 12px 45px; /* Espaço na esquerda para o ícone */
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+/* Foco no Input */
+.input-wrapper input:focus {
+  border-color: var(--color-gold);
+  outline: none;
+  background-color: #0d0d0d;
+}
+
+.input-wrapper input:focus + i {
+  /* Se você colocar o ícone DEPOIS do input no HTML, pode usar isso */
+  /* color: #fff; */
+}
+
+/* Botão de "Olho" para mostrar senha */
+.toggle-pass {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.toggle-pass:hover {
+  color: #fff;
+}
+
+/* --- BOTÃO DE AÇÃO (ENTRAR) --- */
+.btn-auth-submit {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--color-gold);
+  color: #121212; /* Texto preto para contraste no dourado */
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-top: 10px;
+}
+
+.btn-auth-submit:hover {
+  background-color: #d4af37; /* Dourado um pouco mais escuro */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(242, 201, 76, 0.3);
+}
+
+/* --- LINKS EXTRAS (Esqueci senha) --- */
+.auth-footer-links {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.auth-link {
+  color: #888;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.auth-link:hover {
+  color: var(--color-gold);
+  text-decoration: underline;
+}
+
+/* Animação de troca de abas */
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Ajuste para checkbox "Lembrar de mim" */
+.remember-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: #aaa;
+  cursor: pointer;
+}
+.remember-box input {
+  accent-color: var(--color-gold);
+  transform: scale(1.1);
+}
+/* =========================================
+   PERSONALIZAÇÃO: SEÇÃO DE CUPONS (.coupon-section)
+   ========================================= */
+
+/* Container da Seção (Fundo isolado para destaque) */
+.coupon-section {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Título da Seção */
+.coupon-section h3 {
+  color: #fff;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.coupon-section h3 i {
+  color: var(--color-gold);
+}
+
+/* --- GRID DE CUPONS --- */
+.coupons-grid {
+  display: grid;
+  /* Cria colunas automáticas que não ficam menores que 160px */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+/* Esconde o Radio Button original (A bolinha feia) */
+.coupon-option {
+  display: none;
+}
+
+/* --- O CARTÃO DE CUPOM (Visual) --- */
+.coupon-card-ui {
+  position: relative;
+  background-color: #222;
+  /* Borda tracejada dá a sensação de "Ticket" */
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 90px;
+  user-select: none;
+}
+
+/* Efeito Hover */
+.coupon-card-ui:hover {
+  background-color: #2a2a2a;
+  border-color: #666;
+  transform: translateY(-2px);
+}
+
+/* --- ESTADO SELECIONADO (CHECKED) --- */
+.coupon-option:checked + .coupon-card-ui {
+  background-color: rgba(242, 201, 76, 0.1); /* Fundo Dourado Transparente */
+  border-style: solid; /* Borda vira sólida */
+  border-color: var(--color-gold);
+  box-shadow: 0 0 15px rgba(242, 201, 76, 0.15); /* Glow */
+}
+
+/* Ícone de Check (Marca de Seleção) */
 .coupon-option:checked + .coupon-card-ui::after {
   content: "✔";
   position: absolute;
   top: 5px;
   right: 8px;
   color: var(--color-gold);
-  font-size: 0.8rem;
+  font-size: 1rem;
+  font-weight: 800;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Estado Desabilitado (Não atinge mínimo) */
+/* --- CONTEÚDO DO TEXTO --- */
+
+/* Código do Cupom (Ex: PROMO10) */
+.cp-code {
+  display: block;
+  color: var(--color-gold);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* Descrição (Ex: 10% de desconto) */
+.cp-desc {
+  display: block;
+  color: #ddd;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+/* Valor Mínimo (Ex: Mínimo R$ 50,00) */
+.cp-min {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* --- ESTADO DESABILITADO/INVÁLIDO --- */
+/* Caso você use uma classe .disabled via JS quando o valor do carrinho for baixo */
 .coupon-card-ui.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   filter: grayscale(1);
+  border-color: #333;
 }
 
-.cp-code {
-  display: block;
-  color: var(--color-gold);
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 4px;
-}
-
-.cp-desc {
-  display: block;
-  color: #ccc;
-  font-size: 0.8rem;
-}
-
-.cp-min {
-  display: block;
-  font-size: 0.75rem;
-  color: #888;
-  margin-top: 5px;
-}
-
-/* --- ESTILOS DA TAXA DE ENTREGA (NOVO) --- */
-
-/* Estilo do Dropdown de Bairros */
-select#bairro {
-  width: 100%;
-  padding: 12px 15px;
-  background-color: #1a1a1a; /* Fundo escuro */
-  color: #fff; /* Texto claro */
-  border: 1px solid #444;
-  border-radius: 8px;
-  font-family: "Poppins", sans-serif;
-  font-size: 1rem;
-  appearance: none; /* Remove a seta padrão feia do navegador */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  cursor: pointer;
-
-  /* Adiciona uma setinha personalizada dourada */
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23f2c94c%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-  background-repeat: no-repeat;
-  background-position: right 15px top 50%;
-  background-size: 12px auto;
-  transition: all 0.3s ease;
-}
-
-select#bairro:focus {
-  outline: none;
-  border-color: var(--color-gold); /* Borda dourada ao clicar */
-  box-shadow: 0 0 8px rgba(242, 201, 76, 0.2);
-}
-
-/* Estilo das opções (quando abre a lista) */
-select#bairro option {
+.coupon-card-ui.disabled:hover {
+  transform: none;
   background-color: #222;
-  color: #fff;
-  padding: 10px;
 }
 
-/* Container do Texto da Taxa (Abaixo dos inputs) */
-.delivery-fee-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.05); /* Fundo sutil */
-  padding: 10px 15px;
-  border-radius: 6px;
-  margin-top: 10px;
-  border-left: 3px solid var(--color-gold); /* Detalhe lateral dourado */
+/* Animação do Check */
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
+/* =========================================
+   PERSONALIZAÇÃO: MODAL MAGIC LINK (.magic-modal-box)
+   ========================================= */
 
-.delivery-fee-label {
-  color: #ccc;
-  font-size: 0.9rem;
-}
-
-#delivery-fee-display {
-  color: var(--color-gold);
-  font-weight: bold;
-  font-size: 1rem;
-}
-/* --- 2. CORREÇÃO DOS ÍCONES (Envelope e Cadeado) --- */
-.input-icon {
-  position: relative; /* Define o limite para o ícone não fugir */
-  width: 100%;
-}
-
-.input-icon i {
-  position: absolute; /* Solto dentro do pai relativo */
-  left: 15px; /* Distância fixa da esquerda */
-  top: 50%; /* Meio da altura */
-  transform: translateY(-50%); /* Centraliza exato no meio vertical */
-  color: var(--color-gold);
-  pointer-events: none; /* Permite clicar "através" do ícone */
-  font-size: 1rem;
-  z-index: 2; /* Garante que fique em cima do input */
-}
-
-.input-icon input {
-  width: 100%;
-  padding: 12px;
-  padding-left: 45px; /* 🔥 IMPORTANTE: Empurra o texto para não ficar em cima do ícone */
-  background-color: var(--color-black);
-  border: 1px solid #444;
-  border-radius: 5px;
-  color: white;
-  box-sizing: border-box; /* Garante que o padding não estoure a largura */
-}
-
-.input-icon input:focus {
-  border-color: var(--color-gold);
-  outline: none;
-}
-
-#bebidas-grid .menu-img {
-  object-fit: contain; /* Mostra a lata inteira sem cortar */
-  padding: 10px; /* Um respiro */
-  background-color: #222; /* Fundo escuro para completar o espaço */
-}
-
-/* --- ESTILO DO MODAL MAGIC LINK (Revamp Visual) --- */
-
-/* Caixa principal do modal */
+/* Caixa Principal do Modal */
 .magic-modal-box {
-  background-color: #1a1a1a; /* Garante fundo escuro */
-  width: 90%; /* Responsivo no celular */
-  max-width: 420px !important;
-  text-align: center;
-  border: 1px solid var(--color-gold); /* Borda dourada fina */
-  border-radius: 16px; /* Cantos mais arredondados */
+  background-color: #1a1a1a;
+  /* Borda Dourada para dar destaque "Mágico" */
+  border: 1px solid var(--color-gold);
+  border-radius: 16px;
   padding: 30px 25px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); /* Sombra forte para destaque */
-  position: relative; /* Para posicionar o botão de fechar */
-  animation: slideIn 0.3s ease-out;
+  max-width: 400px;
+  width: 90%;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8); /* Sombra profunda */
+  animation: slideUpFade 0.4s ease-out;
 }
 
-/* Botão de Fechar (X) mais elegante */
+/* Botão de Fechar (X) */
 .magic-modal-box .close-btn {
   position: absolute;
-  top: 15px;
+  top: 10px;
   right: 15px;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   color: #666;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.3s;
   line-height: 1;
-  padding: 5px;
 }
+
 .magic-modal-box .close-btn:hover {
   color: var(--color-red);
-  transform: scale(1.1);
+  transform: rotate(90deg);
 }
 
-/* Ícone do Envelope */
-.magic-icon-area {
-  margin-bottom: 20px;
-  animation: floatIcon 3s ease-in-out infinite; /* Flutua suavemente */
+/* Ícone do Envelope (Animação de Flutuar) */
+.magic-modal-box i.fa-envelope-open-text {
+  display: inline-block;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  /* Efeito de brilho atrás do ícone */
+  filter: drop-shadow(0 0 10px rgba(242, 201, 76, 0.3));
+  animation: floatIcon 3s ease-in-out infinite;
 }
 
-/* Caixa Cinza com as Instruções */
-.magic-text-body ul {
-  background: rgba(255, 255, 255, 0.05); /* Fundo sutil */
-  padding: 20px;
-  border-radius: 12px;
-  list-style: none;
-  margin: 20px 0;
-  border: 1px solid #333;
-  text-align: left; /* Garante que o texto fique à esquerda */
+/* Título "Link Enviado" */
+.magic-modal-box h3 {
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
-/* Item da lista (Onde a mágica do alinhamento acontece) */
-.magic-text-body li {
-  display: flex; /* Flexbox para alinhar ícone e texto */
-  align-items: flex-start; /* Alinha no topo caso o texto quebre linha */
-  gap: 12px; /* Espaço entre o emoji e o texto */
-  margin-bottom: 12px;
+/* Texto descritivo */
+.magic-text-body p {
+  color: #ccc;
   font-size: 0.95rem;
-  color: #ddd;
-  line-height: 1.4;
-}
-
-.magic-text-body li:last-child {
-  margin-bottom: 0;
-}
-
-/* Ajuste nos emojis para não ficarem gigantes ou tortos */
-.magic-text-body li span {
-  font-size: 1.2rem;
-  line-height: 1;
-  flex-shrink: 0; /* Impede o emoji de ser esmagado */
-  margin-top: 2px; /* Ajuste fino vertical */
-}
-
-/* Texto pequeno do rodapé */
-.magic-footer-text {
-  font-size: 0.85rem;
-  color: #888;
   margin-bottom: 20px;
   line-height: 1.5;
 }
 
-/* Animações */
-@keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+/* --- LISTA DE INSTRUÇÕES (A Caixa Cinza) --- */
+ul.magic-text-body {
+  background: rgba(255, 255, 255, 0.05); /* Fundo sutil */
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 15px;
+  list-style: none; /* Remove bolinhas padrão */
+  text-align: left; /* Texto alinhado à esquerda para leitura */
+  margin-bottom: 20px;
 }
 
+/* Item da Lista (Emoji + Texto) */
+ul.magic-text-body li {
+  display: flex;
+  align-items: flex-start; /* Alinha no topo caso quebre linha */
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #ddd;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+ul.magic-text-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* Ajuste dos Emojis para não ficarem tortos */
+ul.magic-text-body li span {
+  font-size: 1.1rem;
+  line-height: 1.2;
+  flex-shrink: 0; /* Impede o emoji de amassar */
+}
+
+/* Texto Pequeno do Rodapé */
+.magic-text-body p:last-of-type {
+  font-size: 0.8rem !important; /* Força tamanho menor */
+  color: #888 !important;
+  margin-bottom: 25px;
+}
+
+/* Botão "Entendi" */
+.magic-modal-box .btn-primary {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(217, 48, 37, 0.3);
+}
+
+/* --- ANIMAÇÕES --- */
 @keyframes floatIcon {
   0%,
   100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
