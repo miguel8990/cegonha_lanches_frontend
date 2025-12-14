@@ -88,7 +88,8 @@ export function checkMagicLinkReturn() {
       saveSession(null, userObj);
 
       // Limpa a URL para ficar bonita
-      window.history.replaceState({}, document.title, "/index.html");
+      // Mude para isto:
+      window.history.replaceState({}, document.title, window.location.pathname);
 
       if (window.checkLoginState) window.checkLoginState();
       if (window.showToast) window.showToast(`Bem-vindo, ${name}!`, "success");
