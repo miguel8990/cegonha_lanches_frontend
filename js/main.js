@@ -89,10 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalProd = document.getElementById("modal-personalizacao");
     const modalAuth = document.getElementById("modal-auth");
     const accPhone = document.getElementById("acc-whatsapp");
+    const modalOrders = document.getElementById("modal-orders");
 
     // 1. Fecha Modais Grandes (se clicar no fundo escuro)
     if (event.target === modalProd) fecharModal();
     if (event.target === modalAuth) closeAuthModal();
+    if (event.target === modalOrders) fecharModalPedidos();
     if (accPhone) {
       accPhone.addEventListener("input", (e) => {
         let v = e.target.value.replace(/\D/g, "");
@@ -179,20 +181,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Chat Instantâneo
   socket.on("chat_message", (msg) => {
     const { user } = getSession();
-    // Só mostra se a mensagem for MINHA ou PARA MIM (do admin)
+
+    // Só mostra se for mensagem da minha conversa
     if (user && user.id === msg.user_id) {
-      // Se a janela de chat estiver aberta, desenha a mensagem
-      const chatBody = document.getElementById("chat-body");
-      if (
-        chatBody &&
-        document.getElementById("modal-chat").style.display === "flex"
-      ) {
-        appendMessage(msg.message, msg.is_from_admin ? "received" : "sent");
+      const chatWidget = document.getElementById("chat-widget");
+
+      // Se o chat estiver aberto (não tiver a classe 'minimized')
+      if (chatWidget && !chatWidget.classList.contains("minimized")) {
+        // Adiciona a mensagem na tela sem recarregar tudo
+        adicionarMensagemNaTela(msg);
       } else if (msg.is_from_admin) {
-        // Se fechado, mostra aviso
+        // Se fechado, notifica
         showToast("Nova mensagem do restaurante!", "info");
-        const btnChat = document.querySelector(".floating-chat");
-        if (btnChat) btnChat.classList.add("notify"); // Adicione um CSS para piscar
+        const icon = document.getElementById("chat-icon");
+        if (icon) icon.style.color = "var(--color-gold)"; // Feedback visual simples
       }
     }
   });
@@ -1797,64 +1799,105 @@ function mostrarForcaSenha(valor, elementoId) {
   }
 }
 
-let chatInterval = null;
-let chatAberto = false;
-let ultimoEnvio = 0;
-const COOLDOWN_CHAT = 2000;
+// --- CHAT ---
 
+let chatInterval = null;
+let chatAberto = false; // Estado do chat (aberto/fechado)
+let ultimoEnvio = 0;
+const COOLDOWN_CHAT = 2000; // Tempo de espera entre mensagens
+let historicoCarregado = false; // Controle para não carregar histórico repetidamente sem necessidade
+
+// Função para abrir/fechar o chat
 function toggleChat() {
   const widget = document.getElementById("chat-widget");
   const icon = document.getElementById("chat-icon");
   const { user } = getSession();
 
+  // 1. Validação de Login
   if (!user.id) return showToast("Faça login para usar o chat.");
 
-  chatAberto = !chatAberto; // Inverte estado
+  // Verifica se o chat está minimizado (fechado)
+  const estaFechado = widget.classList.contains("minimized");
 
-  if (chatAberto) {
+  if (estaFechado) {
+    // --- ABRINDO O CHAT ---
     widget.classList.remove("minimized");
+
+    // Atualiza ícone
     icon.classList.remove("fa-chevron-up");
     icon.classList.add("fa-chevron-down");
 
-    carregarMensagens(); // Carrega na hora
-    // Inicia Polling (atualiza a cada 3s)
-    if (!chatInterval) chatInterval = setInterval(carregarMensagens, 3000);
+    // [CORREÇÃO IMPORTANTE]: Atualiza o estado da variável para TRUE
+    chatAberto = true;
+
+    // Carrega o histórico apenas se ainda não foi carregado nesta sessão
+    if (!historicoCarregado) {
+      carregarMensagens();
+      historicoCarregado = true;
+    }
+
+    // Foca no input para digitar rápido
+    setTimeout(() => {
+      const input = document.getElementById("chat-input");
+      if (input) input.focus();
+    }, 300);
   } else {
+    // --- FECHANDO O CHAT ---
     widget.classList.add("minimized");
+
+    // Atualiza ícone
     icon.classList.remove("fa-chevron-down");
     icon.classList.add("fa-chevron-up");
 
-    // Para o Polling para economizar bateria/dados
-    if (chatInterval) {
-      clearInterval(chatInterval);
-      chatInterval = null;
-    }
+    // [CORREÇÃO]: Atualiza estado para FALSE
+    chatAberto = false;
   }
 }
 
+// Função que busca as mensagens antigas no Banco de Dados
 async function carregarMensagens() {
-  if (!chatAberto) return;
+  // [CORREÇÃO]: Removemos a verificação rigorosa de (!chatAberto) aqui,
+  // pois às vezes o estado visual atualiza antes da variável.
+  // Vamos confiar que se essa função foi chamada, é para carregar.
 
-  const msgs = await getChatMessages();
   const container = document.getElementById("chat-messages-area");
 
-  // Limpa e remonta (Simples, mas funciona. Ideal seria adicionar só novas)
+  // Feedback visual de carregamento
+  container.innerHTML = '<p class="chat-welcome">Carregando histórico...</p>';
+
+  // Busca mensagens na API (routes_chat.py)
+  const msgs = await getChatMessages();
+
+  // Limpa o container para renderizar a lista oficial
   container.innerHTML = '<p class="chat-welcome">Histórico de Conversa</p>';
 
+  if (msgs.length === 0) {
+    container.innerHTML +=
+      '<p style="text-align:center; color:#888; font-size:0.8rem;">Nenhuma mensagem ainda.</p>';
+  }
+
+  // Renderiza cada mensagem
   msgs.forEach((msg) => {
+    // Determina se a mensagem é do admin ou do cliente para estilizar (direita/esquerda)
     const classe = msg.is_from_admin ? "msg-admin" : "msg-user";
-    // Opcional: Formatar hora msg.timestamp
 
     const div = document.createElement("div");
     div.className = `msg ${classe}`;
     div.innerText = msg.message;
+
+    // Adiciona a hora se disponível (opcional)
+    if (msg.timestamp) {
+      div.title = new Date(msg.timestamp).toLocaleString();
+    }
+
     container.appendChild(div);
   });
 
-  // Scroll para o final (mensagem mais recente)
-  // container.scrollTop = container.scrollHeight;
+  // [CORREÇÃO]: Rola para o final para ver a última mensagem
+  container.scrollTop = container.scrollHeight;
 }
 
+// Envia mensagem para o servidor
 async function enviarMensagemChat() {
   const input = document.getElementById("chat-input");
   const texto = input.value.trim();
@@ -1863,27 +1906,58 @@ async function enviarMensagemChat() {
 
   if (texto.length > 800) {
     showToast("Sua mensagem é muito longa. Por favor, seja mais breve.");
-  }
-  const agora = Date.now();
-  if (agora - ultimoEnvio < COOLDOWN_CHAT) {
-    const segundosRestantes = Math.ceil(
-      (COOLDOWN_CHAT - (agora - ultimoEnvio)) / 1000
-    );
-
     return;
   }
-  // Envia para o backend
+
+  // Controle de Spam (Cooldown) para evitar cliques duplos
+  const agora = Date.now();
+  if (agora - ultimoEnvio < COOLDOWN_CHAT) {
+    return;
+  }
+
+  // 1. Envia para o backend via API (POST)
+  // Nota: Não desenhamos na tela aqui. Esperamos o Socket.io devolver a mensagem.
+  // Isso garante que o que aparece na tela é o que REALMENTE foi salvo no servidor.
   const sucesso = await sendChatMessage(texto);
 
   if (sucesso) {
+    // 2. Limpa o campo
     input.value = "";
-    carregarMensagens(); // Atualiza a tela imediatamente Atualiza o tempo do último envio Atualiza o tempo do último envio
+    input.focus();
     ultimoEnvio = Date.now();
+    // A mensagem aparecerá via Socket (socket.on('chat_message')) configurado no início do main.js
   } else {
-    showToast("Erro ao enviar mensagem.");
+    showToast("Erro ao enviar mensagem.", "error");
   }
 }
 
+// Adiciona mensagem na tela (usado pelo Socket.IO)
+function adicionarMensagemNaTela(msg) {
+  const container = document.getElementById("chat-messages-area");
+  if (!container) return;
+
+  // Remove aviso de "Nenhuma mensagem" se existir
+  if (container.querySelector('p[style*="text-align:center"]')) {
+    container.querySelector('p[style*="text-align:center"]').remove();
+  }
+
+  const classe = msg.is_from_admin ? "msg-admin" : "msg-user";
+
+  const div = document.createElement("div");
+  div.className = `msg ${classe}`;
+  div.innerText = msg.message;
+
+  // Adiciona ao final e rola para baixo imediatamente
+  container.appendChild(div);
+
+  // Animação suave de scroll
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: "smooth",
+  });
+}
+
+// Atalho de teclado (Enter)
 function handleChatKey(e) {
   if (e.key === "Enter") enviarMensagemChat();
 }

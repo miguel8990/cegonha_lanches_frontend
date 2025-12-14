@@ -998,21 +998,19 @@
 
     <div id="modal-orders" class="modal-overlay">
       <div
-        class="modal-content auth-content"
-        style="max-width: 600px; max-height: 80vh"
+        class="modal-content"
+        style="
+          max-width: 600px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+        "
       >
-        <div
-          class="modal-header"
-          style="
-            height: auto;
-            background: transparent;
-            padding: 15px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-          "
-        >
-          <h3 style="color: white; margin: 0">Meus Pedidos</h3>
+        <div class="modal-header" style="flex-shrink: 0">
+          <h3 style="color: white; margin: 0">
+            <i class="fa-solid fa-list-ul" style="color: var(--color-gold)"></i>
+            Meus Pedidos
+          </h3>
           <button
             class="close-modal"
             style="position: static"
@@ -1021,7 +1019,8 @@
             &times;
           </button>
         </div>
-        <div class="modal-body" style="padding: 0">
+
+        <div class="modal-body">
           <div id="orders-list-container" class="orders-list"></div>
         </div>
       </div>

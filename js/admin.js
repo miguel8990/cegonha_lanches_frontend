@@ -67,6 +67,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("connect", () => {
       console.log("🟢 Conectado ao sistema de pedidos em tempo real!");
+      carregarPedidosAdmin();
+      carregarCozinha();
+      carregarListaConversas();
     });
 
     socket.on("novo_pedido", (pedido) => {
@@ -117,21 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Socket.io não carregado ou falhou:", e);
   }
 
-  // Fallback: Polling (segurança caso socket falhe)
-  setInterval(() => {
-    const panelKitchen = document.getElementById("panel-kitchen");
-    if (panelKitchen && panelKitchen.classList.contains("active")) {
-      carregarCozinha();
-    }
-  }, 15000); // Aumentado para 15s já que temos socket
+  carregarCozinha(); //tinha um setinterval aqui
 
-  setInterval(() => {
-    const panelChat = document.getElementById("panel-chat");
-    if (panelChat && panelChat.classList.contains("active")) {
-      carregarListaConversas();
-      if (chatUserIdAtivo) carregarChatAtivo(chatUserIdAtivo);
-    }
-  }, 15000);
+  carregarListaConversas(); //tinha um setinterval aqui
 });
 
 // =============================================================================
@@ -988,9 +979,11 @@ async function carregarBairrosAdmin() {
                   .toFixed(2)
                   .replace(".", ",")}</div>
             </div>
-            <button class="btn-small btn-cancel" onclick="window.apagarBairro(${
-              b.id
-            })">
+            <button 
+            style="width: 30px; height: 30px; background-color: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;"
+            onmouseover="this.style.transform='scale(1.1)'"
+            onmouseout="this.style.transform='scale(1)'"
+            onclick="window.apagarBairro(${b.id})">
                 <i class="fa-solid fa-trash"></i>
             </button>
         </div>`;
