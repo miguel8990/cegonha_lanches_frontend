@@ -178,7 +178,7 @@ export async function loginUser(email, password) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Erro ao entrar");
 
-    return { success: true, token: "cookie", user: data.user };
+    return { success: true, token: data.token, user: data.user };
   } catch (error) {
     return { success: false, error: error.message };
   }

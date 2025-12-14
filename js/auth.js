@@ -218,7 +218,7 @@ async function handleGoogleCredentialResponse(response) {
     const data = await res.json();
 
     if (res.ok) {
-      saveSession(null, data.user);
+      saveSession(data.token, data.user);
       if (window.showToast)
         window.showToast(`Bem-vindo, ${data.user.name}!`, "success");
 
