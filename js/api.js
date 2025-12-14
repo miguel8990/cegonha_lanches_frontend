@@ -16,11 +16,15 @@ export const API_BASE_URL = isLocalhost
 // Substitui o fetch padrão para garantir envio de Cookies e Headers
 async function fetchAuth(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = localStorage.getItem("auth_token");
 
   // Configuração padrão
   const defaultHeaders = {
     "Content-Type": "application/json",
   };
+  if (token) {
+    defaultHeaders["Authorization"] = `Bearer ${token}`;
+  }
 
   const config = {
     ...options,

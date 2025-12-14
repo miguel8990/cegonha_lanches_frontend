@@ -13,6 +13,9 @@ export function saveSession(token, user) {
   if (user) {
     localStorage.setItem("user", JSON.stringify(user));
   }
+  if (token) {
+    localStorage.setItem("auth_token", token);
+  }
 }
 
 export function getSession() {
@@ -73,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
 export function checkMagicLinkReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("status");
+  const token = params.get("token");
 
   if (status === "verified") {
     // Backend retornou sucesso via URL
@@ -85,7 +89,7 @@ export function checkMagicLinkReturn() {
       // O cookie HttpOnly já foi setado pelo backend no redirect.
       // Apenas salvamos o estado visual.
       const userObj = { id, name, role, whatsapp };
-      saveSession(null, userObj);
+      saveSession(token, { id, name, role, whatsapp });
 
       // Limpa a URL para ficar bonita
       // Mude para isto:
