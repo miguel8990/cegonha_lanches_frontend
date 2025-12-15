@@ -9,7 +9,7 @@ const isLocalhost =
   window.location.hostname === "127.0.0.1";
 
 export const API_BASE_URL = isLocalhost
-  ? "http://localhost:5000/api"
+  ? `http://${window.location.hostname}:5000/api`
   : "https://cegonha-lanches-backend.onrender.com/api";
 
 // --- HELPER CENTRALIZADO (O "Pulo do Gato") ---

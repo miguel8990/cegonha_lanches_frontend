@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Ela deve ser executada após o checkMagicLinkReturn para não causar problemas de ordem.
   await verifySession();
 
-  verifySession();
   initMenu();
   initCombos();
   initBebidas();
@@ -102,6 +101,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalAuth = document.getElementById("modal-auth");
     const accPhone = document.getElementById("acc-whatsapp");
     const modalOrders = document.getElementById("modal-orders");
+    const profileMenu = document.getElementById("profile-menu");
+    const profileIcon = document.querySelector(".profile-icon");
 
     // 1. Fecha Modais Grandes (se clicar no fundo escuro)
     if (event.target === modalProd) fecharModal();
@@ -118,8 +119,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // 2. Fecha o Menu de Perfil (Dropdown)
-    const profileMenu = document.getElementById("profile-menu");
-    const profileIcon = document.querySelector(".profile-icon");
 
     // Se o menu existe e está aberto...
     if (profileMenu && profileMenu.style.display === "block") {
