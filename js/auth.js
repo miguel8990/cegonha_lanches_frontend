@@ -228,17 +228,30 @@ async function handleGoogleCredentialResponse(response) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ credential: response.credential }),
-      credentials: "include", // Garante que a sessão (cookie) seja estabelecida corretamente
+      credentials: "include", // Garante que o navegador aceite o Set-Cookie
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      saveSession(data.token, data.user);
+      // 1. Força uma pequena espera para o navegador processar o cookie
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 2. Salva a sessão visualmente AGORA (sem depender do reload/cookie imediato)
+      // Isso garante que a UI mostre "Olá, Nome" instantaneamente
+      saveSession(null, data.user);
+
       if (window.showToast)
         window.showToast(`Bem-vindo, ${data.user.name}!`, "success");
 
-      setTimeout(() => window.location.reload(), 1000);
+      // 3. Atualiza a tela atual (botões de login somem, perfil aparece)
+      if (window.checkLoginState) window.checkLoginState();
+
+      // 4. Só recarrega a página depois de um tempo seguro (1.5s)
+      // Isso dá tempo de sobra para o cookie persistir no disco/memória do navegador
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } else {
       alert(data.message || "Erro ao logar com Google");
     }
