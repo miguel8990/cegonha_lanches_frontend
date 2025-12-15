@@ -2420,3 +2420,20 @@ window.enviarPedidoFinal = function () {
     alert("Erro ao enviar. Tente recarregar a página.");
   }
 };
+
+// Função para exibir o erro crítico de cookies
+export function showCookieError() {
+  const modal = document.getElementById("modal-cookie-error");
+  if (modal) {
+    modal.style.display = "flex";
+    // Toca um som de erro se quiser
+    // const audio = new Audio("assets/error.mp3"); audio.play().catch(()=>{});
+  } else {
+    alert(
+      "ERRO CRÍTICO: Seu navegador está bloqueando cookies de terceiros. Por favor, habilite-os para fazer login."
+    );
+  }
+}
+
+// Exporta para o window para ser acessível globalmente se necessário
+window.showCookieError = showCookieError;

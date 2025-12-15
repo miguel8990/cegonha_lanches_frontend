@@ -77,6 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Apenas configura; a execução real é no main.js para evitar corrida
 });
 
+import { fetchCurrentUser, API_BASE_URL } from "./api.js";
+import { saveSession, clearSession } from "./auth.js"; // Ajuste os imports conforme seu arquivo
+import { showToast, showCookieError } from "./main.js"; // <--- Importe o showCookieError
+
+// ... (código anterior)
+
 export async function checkMagicLinkReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("status");
@@ -84,21 +90,34 @@ export async function checkMagicLinkReturn() {
   if (status === "verified") {
     if (window.showToast) window.showToast("Validando acesso...", "info");
 
-    // Pequeno delay para garantir que o cookie foi gravado pelo navegador
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // 1. Espera crítica para o navegador processar o Set-Cookie
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Aumentei para 500ms por segurança
 
+    // 2. Tenta ler a sessão usando o cookie que DEVERIA estar lá
     const user = await fetchCurrentUser();
 
     if (user) {
+      // SUCESSO: O cookie passou!
       saveSession(null, user);
       if (window.showToast)
         window.showToast(`Bem-vindo, ${user.name}!`, "success");
+
+      // Limpa a URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (window.checkLoginState) window.checkLoginState();
     } else {
-      if (window.showToast)
-        window.showToast("Erro ao confirmar login.", "error");
+      // 🚨 ERRO CRÍTICO DETECTADO 🚨
+      // A URL diz que logou, mas o Backend diz que não tem cookie.
+      console.error("ERRO: Cookie de terceiros bloqueado pelo navegador.");
+
+      // Limpa visualmente e mostra o modal de ajuda
+      clearSession();
+      if (window.showCookieError) {
+        window.showCookieError();
+      } else {
+        alert("Seu navegador bloqueou o login. Habilite cookies de terceiros.");
+      }
     }
-    window.history.replaceState({}, document.title, window.location.pathname);
-    if (window.checkLoginState) window.checkLoginState();
   } else if (status === "error_token") {
     if (window.showToast)
       window.showToast("Link inválido ou expirado.", "error");
@@ -220,6 +239,12 @@ async function handleGoogleCredentialResponse(response) {
     if (res.ok) {
       // 1. Força uma pequena espera para o navegador processar o cookie
       await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const checkUser = await fetchCurrentUser();
+      if (!checkUser) {
+        showCookieError(); // Cookie Google também foi bloqueado
+        return;
+      }
 
       // 2. Salva a sessão visualmente AGORA (sem depender do reload/cookie imediato)
       // Isso garante que a UI mostre "Olá, Nome" instantaneamente
