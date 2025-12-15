@@ -25,7 +25,7 @@ import {
   fetchDashboardStats,
   fetchOrderDossier,
 } from "./api.js";
-import { getSession, clearSession } from "./auth.js";
+import { getSession, clearSession, logout } from "./auth.js";
 import { showToast } from "./main.js";
 
 // --- Variáveis de Estado ---
@@ -152,13 +152,14 @@ function switchPanel(panelId) {
   if (activeBtn) activeBtn.classList.add("active");
 }
 
-function adminLogout() {
+async function adminLogout() {
   if (confirm("Tem certeza que deseja sair do Painel Administrativo?")) {
-    clearSession();
-    window.location.href = "index.html";
+    // Apenas chame a função importada.
+    // Ela já limpa a sessão, mostra o toast e redireciona após 1s.
+    await logout();
   }
 }
-
+window.adminLogout = adminLogout;
 // =============================================================================
 //  ABA 1: PEDIDOS
 // =============================================================================

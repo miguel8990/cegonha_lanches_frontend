@@ -2323,11 +2323,6 @@ footer {
   background-color: #0d0d0d;
 }
 
-.input-wrapper input:focus + i {
-  /* Se você colocar o ícone DEPOIS do input no HTML, pode usar isso */
-  /* color: #fff; */
-}
-
 /* Botão de "Olho" para mostrar senha */
 .toggle-pass {
   position: absolute;

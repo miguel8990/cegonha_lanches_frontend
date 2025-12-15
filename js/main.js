@@ -25,6 +25,7 @@ import {
   clearSession,
   pedirMagicLink,
   initGoogleButton,
+  logout as authLogout,
 } from "./auth.js";
 
 // Estado Global
@@ -245,7 +246,7 @@ window.openAuthModal = openAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.switchAuthTab = switchAuthTab;
 window.toggleProfileMenu = toggleProfileMenu;
-window.logout = logout;
+
 window.fecharModalAuth = closeAuthModal;
 window.openAccountModal = openAccountModal;
 window.closeAccountModal = closeAccountModal;
@@ -478,13 +479,20 @@ function toggleProfileMenu() {
   }
 }
 
-function logout() {
-  // [MUDANÇA] Limpa cookies
+// Função ligada ao botão "Sair" do menu
+window.logout = function () {
+  // 1. Fecha o menu dropdown visualmente
+  toggleProfileMenu();
+
+  // 2. Atualiza a tela imediatamente para parecer que saiu (UX rápida)
+  // (Opcional, pois o authLogout vai redirecionar a página em 1s)
   clearSession();
   checkLoginState();
-  toggleProfileMenu();
-  showToast("Você saiu da conta.");
-}
+
+  // 3. Chama a lógica real (API + Limpeza Profunda + Redirect)
+  // Nota: Não precisa de 'await' aqui se não for fazer nada depois
+  authLogout();
+};
 
 // --- 2. LÓGICA DO CARRINHO ---
 
