@@ -77,10 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Apenas configura; a execução real é no main.js para evitar corrida
 });
 
-import { fetchCurrentUser, API_BASE_URL } from "./api.js";
-import { saveSession, clearSession } from "./auth.js"; // Ajuste os imports conforme seu arquivo
-import { showToast, showCookieError } from "./main.js"; // <--- Importe o showCookieError
-
 // ... (código anterior)
 
 export async function checkMagicLinkReturn() {
