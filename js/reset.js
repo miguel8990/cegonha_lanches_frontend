@@ -65,10 +65,12 @@ function initRequestForm() {
     btn.disabled = true;
 
     try {
+      document.cookie = `token=${token}; path=/; max-age=3600; samesite=lax`;
       const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email }),
+        credentials: "include",
       });
 
       // Por segurança, sempre mostramos sucesso (para não revelar se o email existe)
@@ -112,6 +114,8 @@ function initResetForm(token) {
       const data = await res.json();
 
       if (res.ok) {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         alert("Sucesso! Sua senha foi alterada. Faça login agora.");
         window.location.href = "index.html"; // Redireciona para login
       } else {
