@@ -1,7 +1,6 @@
 // site/js/api.js
 
 import { showToast } from "./main.js";
-// import { getToken } from "./auth.js"; // Não é mais necessário ler o token manualmente
 
 // Configuração Dinâmica de Ambiente
 const isLocalhost =
@@ -12,34 +11,38 @@ export const API_BASE_URL = isLocalhost
   ? `http://${window.location.hostname}:5000/api`
   : "https://cegonha-lanches-backend.onrender.com/api";
 
-// --- HELPER CENTRALIZADO (O "Pulo do Gato") ---
-// Substitui o fetch padrão para garantir envio de Cookies e Headers
+/**
+ * HELPER CENTRALIZADO DE REQUISIÇÕES
+ * * Refatorado para HttpOnly:
+ * 1. Não lê token do localStorage.
+ * 2. Garante credentials: "include" para enviar o cookie.
+ * 3. Permite sobrescrever headers se necessário (ex: reset de senha).
+ */
 async function fetchAuth(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = localStorage.getItem("auth_token");
 
-  // Configuração padrão
+  // Headers padrão
   const defaultHeaders = {
     "Content-Type": "application/json",
   };
-  if (token) {
-    defaultHeaders["Authorization"] = `Bearer ${token}`;
-  }
 
   const config = {
     ...options,
     headers: {
       ...defaultHeaders,
-      ...options.headers,
+      ...options.headers, // Permite que quem chama adicione headers extras (ex: Authorization manual)
     },
-    credentials: "include", // <--- ESSENCIAL: Envia o Cookie HttpOnly
+    credentials: "include", // 🔥 OBRIGATÓRIO: Envia o Cookie HttpOnly para o backend
   };
 
   const response = await fetch(url, config);
   return response;
 }
 
-// Traduz o produto do Backend para o formato do Frontend
+// -----------------------------------------------------------------------------
+// FUNÇÕES UTILITÁRIAS
+// -----------------------------------------------------------------------------
+
 function adaptarProduto(produtoBack) {
   let detalhes = {};
   if (typeof produtoBack.details_json === "string") {
@@ -66,39 +69,61 @@ function adaptarProduto(produtoBack) {
   };
 }
 
-// --- CARDÁPIO (Rotas Públicas) ---
+function extrairNomes(lista) {
+  if (!lista) return [];
+  return lista.map((i) => (typeof i === "string" ? i : i.nome));
+}
+
+function enviarWhatsApp(data, id) {
+  const tel = "5534996537883";
+  const texto =
+    `*NOVO PEDIDO #${id}*\n` +
+    `----------------------------------\n` +
+    `👤 *${data.name}*\n` +
+    `📱 ${data.phone}\n` +
+    `📍 ${data.address}, ${data.number}\n` +
+    (data.bairro ? `🏘️ ${data.bairro}\n` : "") +
+    (data.comp ? `📌 ${data.comp}\n` : "") +
+    `----------------------------------\n` +
+    `🛒 *RESUMO:*\n${data.resumoCarrinho}\n` +
+    `----------------------------------\n` +
+    `💰 *TOTAL: R$ ${data.total.toFixed(2)}*\n\n` +
+    `📝 *Obs:* ${data.message}`;
+
+  const url = `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(
+    texto
+  )}`;
+  window.open(url, "_blank");
+}
+
+// -----------------------------------------------------------------------------
+// ROTAS DE API (Clean Code)
+// -----------------------------------------------------------------------------
+
+// --- CARDÁPIO ---
 export const fetchMenu = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/menu/lanches`);
-    if (!response.ok) throw new Error("Erro na API");
-    const dados = await response.json();
-    return dados.map(adaptarProduto);
-  } catch (error) {
-    console.error("Erro Menu:", error);
+    const res = await fetch(`${API_BASE_URL}/menu/lanches`);
+    return res.ok ? (await res.json()).map(adaptarProduto) : [];
+  } catch (e) {
     return [];
   }
 };
 
 export const fetchCombos = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/menu/combos`);
-    if (!response.ok) throw new Error("Erro na API");
-    const dados = await response.json();
-    return dados.map(adaptarProduto);
-  } catch (error) {
-    console.error("Erro Combos:", error);
+    const res = await fetch(`${API_BASE_URL}/menu/combos`);
+    return res.ok ? (await res.json()).map(adaptarProduto) : [];
+  } catch (e) {
     return [];
   }
 };
 
 export const fetchBebidas = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/menu/bebidas`);
-    if (!response.ok) throw new Error("Erro na API");
-    const dados = await response.json();
-    return dados.map(adaptarProduto);
-  } catch (error) {
-    console.error("Erro Bebidas:", error);
+    const res = await fetch(`${API_BASE_URL}/menu/bebidas`);
+    return res.ok ? (await res.json()).map(adaptarProduto) : [];
+  } catch (e) {
     return [];
   }
 };
@@ -134,7 +159,6 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
   };
 
   try {
-    // [REFATORADO] Usa fetchAuth
     const response = await fetchAuth("/orders/create", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -147,14 +171,9 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
     }
 
     const dados = await response.json();
+    if (!response.ok) throw new Error(dados.error || "Falha ao salvar pedido");
 
-    if (!response.ok) {
-      throw new Error(dados.error || "Falha ao salvar pedido");
-    }
-
-    if (abrirWhatsapp) {
-      enviarWhatsApp(frontData, dados.id);
-    }
+    if (abrirWhatsapp) enviarWhatsApp(frontData, dados.id);
 
     return {
       success: true,
@@ -162,23 +181,21 @@ export async function submitOrder(frontData, abrirWhatsapp = true) {
       redirectUrl: dados.redirect_url,
     };
   } catch (error) {
-    console.error("Erro Envio:", error);
     return { success: false, error: error.message };
   }
 }
 
-// --- AUTENTICAÇÃO ---
+// --- AUTENTICAÇÃO (Login/Register não retornam token visível mais) ---
 export async function loginUser(email, password) {
   try {
     const response = await fetchAuth("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Erro ao entrar");
-
-    return { success: true, token: data.token, user: data.user };
+    // O backend já setou o cookie. Retornamos apenas o user para a UI.
+    return { success: true, user: data.user };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -190,11 +207,9 @@ export async function registerUser(userData) {
       method: "POST",
       body: JSON.stringify(userData),
     });
-
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Erro ao cadastrar");
-
-    return { success: true };
+    return { success: true, user: data.user };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -206,302 +221,261 @@ export async function updateUserProfile(userData) {
       method: "PUT",
       body: JSON.stringify(userData),
     });
-
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Erro ao atualizar");
-
     return { success: true, user: data.user };
   } catch (error) {
     return { success: false, error: error.message };
   }
 }
 
-// --- ENDEREÇOS ---
-export async function fetchAddresses() {
+export async function fetchCurrentUser() {
   try {
-    const res = await fetchAuth("/address");
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return [];
-  }
-}
-
-export async function addAddress(addrData) {
-  try {
-    const res = await fetchAuth("/address", {
-      method: "POST",
-      body: JSON.stringify(addrData),
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-export async function setActiveAddress(id) {
-  try {
-    await fetchAuth(`/address/${id}/active`, { method: "PATCH" });
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-export async function deleteAddress(id) {
-  try {
-    await fetchAuth(`/address/${id}`, { method: "DELETE" });
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-// --- MEUS PEDIDOS ---
-export async function fetchMyOrders() {
-  try {
-    const response = await fetchAuth("/orders/me");
-    if (!response.ok) throw new Error("Erro ao buscar pedidos");
+    // O navegador envia o cookie automaticamente
+    const response = await fetchAuth("/auth/me");
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) return null;
     return await response.json();
   } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-// --- CHAT ---
-export async function getChatMessages() {
-  try {
-    const res = await fetchAuth("/chat");
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (e) {
-    return [];
-  }
-}
-
-export async function sendChatMessage(text) {
-  try {
-    const res = await fetchAuth("/chat", {
-      method: "POST",
-      body: JSON.stringify({ message: text }),
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-// --- PAINEL ADMIN ---
-export async function fetchAdminMenu() {
-  try {
-    const response = await fetchAuth("/menu/admin");
-    if (!response.ok) throw new Error("Erro ao buscar menu admin");
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-export async function toggleAvailability(id) {
-  try {
-    const response = await fetchAuth(`/menu/${id}/toggle`, { method: "PATCH" });
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-}
-
-export async function updateOrderStatus(id, status) {
-  try {
-    const response = await fetchAuth(`/orders/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-}
-
-export async function fetchAdminConversations() {
-  try {
-    const res = await fetchAuth("/chat/admin/conversations");
-    return res.ok ? await res.json() : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-export async function fetchAdminUserHistory(userId) {
-  try {
-    const res = await fetchAuth(`/chat/admin/history/${userId}`);
-    return res.ok ? await res.json() : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-export async function sendAdminReply(userId, text) {
-  try {
-    const res = await fetchAuth("/chat/admin/reply", {
-      method: "POST",
-      body: JSON.stringify({ user_id: userId, message: text }),
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-// --- ADMIN: PRODUTOS (Upload de Imagem) ---
-// NOTA: Upload NÃO usa fetchAuth pois não pode ter Content-Type: application/json
-export async function uploadImage(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/upload`, {
-      method: "POST",
-      body: formData,
-      credentials: "include", // Manual aqui
-    });
-
-    if (!res.ok) throw new Error("Erro no upload");
-    const data = await res.json();
-    return data.url;
-  } catch (e) {
-    console.error(e);
     return null;
   }
 }
 
-export async function createProduct(productData) {
+// --- OUTROS ---
+export async function fetchAddresses() {
   try {
-    const res = await fetchAuth("/menu", {
+    return (await fetchAuth("/address")).json();
+  } catch {
+    return [];
+  }
+}
+export async function addAddress(addrData) {
+  try {
+    return (
+      await fetchAuth("/address", {
+        method: "POST",
+        body: JSON.stringify(addrData),
+      })
+    ).ok;
+  } catch {
+    return false;
+  }
+}
+export async function setActiveAddress(id) {
+  try {
+    await fetchAuth(`/address/${id}/active`, { method: "PATCH" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+export async function deleteAddress(id) {
+  try {
+    await fetchAuth(`/address/${id}`, { method: "DELETE" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+export async function fetchMyOrders() {
+  try {
+    const res = await fetchAuth("/orders/me");
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+export async function getChatMessages() {
+  try {
+    const res = await fetchAuth("/chat");
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+export async function sendChatMessage(text) {
+  try {
+    return (
+      await fetchAuth("/chat", {
+        method: "POST",
+        body: JSON.stringify({ message: text }),
+      })
+    ).ok;
+  } catch {
+    return false;
+  }
+}
+// Admin, Config, Delivery, etc... (O padrão fetchAuth resolve tudo)
+export async function fetchAdminMenu() {
+  try {
+    const res = await fetchAuth("/menu/admin");
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+export async function toggleAvailability(id) {
+  try {
+    return (await fetchAuth(`/menu/${id}/toggle`, { method: "PATCH" })).ok;
+  } catch {
+    return false;
+  }
+}
+export async function updateOrderStatus(id, status) {
+  try {
+    return (
+      await fetchAuth(`/orders/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      })
+    ).ok;
+  } catch {
+    return false;
+  }
+}
+export async function fetchAdminConversations() {
+  try {
+    const res = await fetchAuth("/chat/admin/conversations");
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+export async function fetchAdminUserHistory(userId) {
+  try {
+    const res = await fetchAuth(`/chat/admin/history/${userId}`);
+    return res.ok ? await res.json() : [];
+  } catch {
+    return [];
+  }
+}
+export async function sendAdminReply(userId, text) {
+  try {
+    return (
+      await fetchAuth("/chat/admin/reply", {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId, message: text }),
+      })
+    ).ok;
+  } catch {
+    return false;
+  }
+}
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    // Upload não usa JSON, então chamamos fetch direto
+    const res = await fetch(`${API_BASE_URL}/upload`, {
       method: "POST",
-      body: JSON.stringify(productData),
+      body: formData,
+      credentials: "include",
     });
-    return res.ok;
-  } catch (e) {
-    console.error(e);
-    return false;
+    if (!res.ok) throw new Error();
+    return (await res.json()).url;
+  } catch {
+    return null;
   }
 }
-
-export async function updateProduct(id, productData) {
+export async function createProduct(data) {
   try {
-    const res = await fetchAuth(`/menu/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(productData),
-    });
-    return res.ok;
-  } catch (e) {
-    console.error(e);
+    return (
+      await fetchAuth("/menu", { method: "POST", body: JSON.stringify(data) })
+    ).ok;
+  } catch {
     return false;
   }
 }
-
+export async function updateProduct(id, data) {
+  try {
+    return (
+      await fetchAuth(`/menu/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      })
+    ).ok;
+  } catch {
+    return false;
+  }
+}
 export async function deleteProduct(id, password) {
   try {
     const res = await fetchAuth(`/menu/${id}`, {
       method: "DELETE",
-      body: JSON.stringify({ password: password }),
+      body: JSON.stringify({ password }),
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Erro ao deletar");
-    }
-    return true;
-  } catch (e) {
-    console.error(e);
-    return { error: e.message };
+    return res.ok;
+  } catch {
+    return { error: "Erro" };
   }
 }
-
-// --- CONFIG: CUPONS & USERS ---
 export async function fetchCoupons() {
   try {
     const res = await fetchAuth("/config/coupons");
     return res.ok ? await res.json() : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
-
 export async function createCoupon(data) {
   try {
-    const res = await fetchAuth("/config/coupons", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    return res.ok;
-  } catch (e) {
+    return (
+      await fetchAuth("/config/coupons", {
+        method: "POST",
+        body: JSON.stringify(data),
+      })
+    ).ok;
+  } catch {
     return false;
   }
 }
-
 export async function deleteCoupon(id) {
   try {
-    const res = await fetchAuth(`/config/coupons/${id}`, { method: "DELETE" });
-    return res.ok;
-  } catch (e) {
+    return (await fetchAuth(`/config/coupons/${id}`, { method: "DELETE" })).ok;
+  } catch {
     return false;
   }
 }
-
 export async function fetchUsersList() {
   try {
     const res = await fetchAuth("/config/users");
     return res.ok ? await res.json() : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
-
 export async function fetchPublicCoupons() {
   try {
-    // Rota pública, mas fetchAuth não atrapalha
     const res = await fetch(`${API_BASE_URL}/config/coupons/public`);
     return res.ok ? await res.json() : [];
-  } catch (e) {
-    console.error("Erro ao buscar cupons:", e);
+  } catch {
     return [];
   }
 }
-
 export async function fetchCloudGallery() {
   try {
     const res = await fetchAuth("/upload/gallery");
-    if (!res.ok) throw new Error("Erro ao buscar galeria");
-    return await res.json();
-  } catch (e) {
-    console.error(e);
+    return res.ok ? await res.json() : [];
+  } catch {
     return [];
   }
 }
-
 export async function deleteCloudImage(publicId) {
   try {
-    const res = await fetchAuth("/upload/gallery", {
-      method: "DELETE",
-      body: JSON.stringify({ public_id: publicId }),
-    });
-    return res.ok;
-  } catch (e) {
-    console.error(e);
+    return (
+      await fetchAuth("/upload/gallery", {
+        method: "DELETE",
+        body: JSON.stringify({ public_id: publicId }),
+      })
+    ).ok;
+  } catch {
     return false;
   }
 }
-
-// --- DELIVERY ---
 export async function fetchNeighborhoodsAdmin() {
   const res = await fetchAuth("/delivery/admin");
   return res.ok ? await res.json() : [];
 }
-
 export async function fetchNeighborhoodsPublic() {
   try {
     const res = await fetch(`${API_BASE_URL}/delivery`);
@@ -510,43 +484,34 @@ export async function fetchNeighborhoodsPublic() {
     return [];
   }
 }
-
 export async function addNeighborhood(data) {
-  const res = await fetchAuth("/delivery", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  return res.ok;
+  return (
+    await fetchAuth("/delivery", { method: "POST", body: JSON.stringify(data) })
+  ).ok;
 }
-
 export async function deleteNeighborhood(id) {
-  const res = await fetchAuth(`/delivery/${id}`, { method: "DELETE" });
-  return res.ok;
+  return (await fetchAuth(`/delivery/${id}`, { method: "DELETE" })).ok;
 }
-
-// --- SCHEDULE ---
 export async function fetchSchedule() {
   try {
     const res = await fetch(`${API_BASE_URL}/config/schedule`);
     return res.ok ? await res.json() : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
-
 export async function updateSchedule(data) {
   try {
-    const res = await fetchAuth("/config/schedule", {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-    return res.ok;
-  } catch (e) {
+    return (
+      await fetchAuth("/config/schedule", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      })
+    ).ok;
+  } catch {
     return false;
   }
 }
-
-// --- REPORTS ---
 export async function fetchDashboardStats(filtros = {}) {
   try {
     const params = new URLSearchParams(filtros).toString();
@@ -556,7 +521,6 @@ export async function fetchDashboardStats(filtros = {}) {
     return null;
   }
 }
-
 export async function fetchOrderDossier(id) {
   try {
     const res = await fetchAuth(`/reports/dossier/${id}`);
@@ -565,63 +529,12 @@ export async function fetchOrderDossier(id) {
     return null;
   }
 }
-
 export async function fetchAdminOrders(filtros = {}) {
   try {
     const params = new URLSearchParams(filtros).toString();
-    const response = await fetchAuth(`/orders/admin?${params}`);
-
-    if (!response.ok) throw new Error("Erro ao buscar pedidos");
-    return await response.json();
-  } catch (error) {
-    console.error(error);
+    const res = await fetchAuth(`/orders/admin?${params}`);
+    return res.ok ? await res.json() : [];
+  } catch {
     return [];
-  }
-}
-
-// --- UTILITÁRIOS ---
-function extrairNomes(lista) {
-  if (!lista) return [];
-  return lista.map((i) => (typeof i === "string" ? i : i.nome));
-}
-
-function enviarWhatsApp(data, id) {
-  const tel = "5534996537883";
-  const texto =
-    `*NOVO PEDIDO #${id}*\n` +
-    `----------------------------------\n` +
-    `👤 *${data.name}*\n` +
-    `📱 ${data.phone}\n` +
-    `📍 ${data.address}, ${data.number}\n` +
-    (data.bairro ? `🏘️ ${data.bairro}\n` : "") +
-    (data.comp ? `📌 ${data.comp}\n` : "") +
-    `----------------------------------\n` +
-    `🛒 *RESUMO:*\n${data.resumoCarrinho}\n` +
-    `----------------------------------\n` +
-    `💰 *TOTAL: R$ ${data.total.toFixed(2)}*\n\n` +
-    `📝 *Obs:* ${data.message}`;
-
-  const url = `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(
-    texto
-  )}`;
-  window.open(url, "_blank");
-}
-
-export async function fetchCurrentUser() {
-  try {
-    // Note que não precisamos enviar token manual, o navegador envia o cookie
-    // graças ao credentials: 'include' dentro do fetchAuth
-    const response = await fetchAuth("/auth/me");
-
-    if (response.status === 401 || response.status === 403) {
-      return null; // Não está logado (ou cookie expirou)
-    }
-
-    if (!response.ok) throw new Error("Erro ao buscar sessão");
-
-    return await response.json(); // Retorna { id, name, role, ... }
-  } catch (error) {
-    console.warn("Sessão inválida ou erro de rede:", error);
-    return null;
   }
 }

@@ -7,9 +7,9 @@ import { openAuthModal, showToast } from "./main.js";
 //  Nota: O Token real fica num Cookie HttpOnly invisível ao JS.
 // ==========================================
 
-export function saveSession(token, user) {
-  // Salvamos apenas os dados públicos do usuário para a interface (Nome, Email, Role)
-  // O Token JWT não é mais salvo no localStorage por segurança.
+export function saveSession(token_ignored, user) {
+  // Salvamos apenas os dados públicos do usuário para a interface
+  // O parâmetro 'token_ignored' é mantido apenas para não quebrar chamadas antigas, mas não é usado.
   if (user) {
     localStorage.setItem("user", JSON.stringify(user));
   }
@@ -19,55 +19,45 @@ export async function verifySession() {
   const user = await fetchCurrentUser();
 
   if (user) {
-    // Sucesso: O cookie é válido!
-    // Atualizamos o localStorage para garantir que a UI mostre o nome certo
+    // Backend confirmou o cookie -> Sessão Válida
     saveSession(null, user);
   } else {
-    // Falha: O cookie não existe ou expirou.
-    // Limpamos o localStorage para não mostrar "Olá, Fulano" se ele não pode comprar.
+    // Backend rejeitou ou cookie expirou
     clearSession();
   }
 
-  // Atualiza a UI (botões, nome, etc) chamando a função do main.js
+  // Atualiza a UI (botões, nome, etc)
   if (window.checkLoginState) window.checkLoginState();
 }
 
 export function getSession() {
   const userStr = localStorage.getItem("user");
   let user = {};
-
   try {
     user = userStr ? JSON.parse(userStr) : {};
-  } catch (e) {
-    user = {};
-  }
+  } catch (e) {}
 
-  // Retorna um "token fictício" apenas para manter compatibilidade com verificações antigas
-  // Ex: if (token) ...
-  const fakeToken = user.id ? "session_active" : null;
-
-  return { token: fakeToken, user };
+  // Retorna true se tivermos usuário salvo (apenas para lógica visual)
+  // O backend fará a validação real em cada request.
+  return { token: user.id ? "cookie_active" : null, user };
 }
 
 export function clearSession() {
-  // Limpa dados visuais
   localStorage.removeItem("user");
 }
 
 export async function logout() {
   try {
-    // 1. Avisa o backend para destruir o cookie HttpOnly
+    // Avisa o backend para destruir o cookie HttpOnly
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
-      credentials: "include", // <--- OBRIGATÓRIO: Envia o cookie para ser apagado
+      credentials: "include",
     });
   } catch (e) {
-    console.error("Erro ao fazer logout:", e);
+    console.error("Erro logout:", e);
   }
 
-  // 2. Limpa o visual
   clearSession();
-
   if (window.showToast) window.showToast("Sessão terminada.", "info");
   setTimeout(() => {
     window.location.href = "index.html";
@@ -84,36 +74,30 @@ export function getToken() {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkMagicLinkReturn();
+  // Apenas configura; a execução real é no main.js para evitar corrida
 });
 
 export async function checkMagicLinkReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("status");
 
-  // Se a URL tiver status=verified, o backend acabou de criar o cookie!
   if (status === "verified") {
-    // [MUDANÇA CRÍTICA] Não lemos mais name/id da URL. Perguntamos ao Backend!
-    // Mostra um toast provisório para feedback rápido
     if (window.showToast) window.showToast("Validando acesso...", "info");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    const user = await fetchCurrentUser(); // <--- AQUI É O PULO DO GATO
+
+    // Pequeno delay para garantir que o cookie foi gravado pelo navegador
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const user = await fetchCurrentUser();
 
     if (user) {
-      // Salva os dados públicos para a UI
       saveSession(null, user);
-
       if (window.showToast)
         window.showToast(`Bem-vindo, ${user.name}!`, "success");
     } else {
       if (window.showToast)
         window.showToast("Erro ao confirmar login.", "error");
     }
-
-    // Limpa a URL completamente
     window.history.replaceState({}, document.title, window.location.pathname);
-
-    // Atualiza a tela
     if (window.checkLoginState) window.checkLoginState();
   } else if (status === "error_token") {
     if (window.showToast)
