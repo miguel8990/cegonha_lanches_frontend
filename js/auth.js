@@ -13,9 +13,6 @@ export function saveSession(token, user) {
   if (user) {
     localStorage.setItem("user", JSON.stringify(user));
   }
-  if (token) {
-    localStorage.setItem("auth_token", token);
-  }
 }
 
 export async function verifySession() {
