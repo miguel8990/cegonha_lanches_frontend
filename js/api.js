@@ -606,3 +606,22 @@ function enviarWhatsApp(data, id) {
   )}`;
   window.open(url, "_blank");
 }
+
+export async function fetchCurrentUser() {
+  try {
+    // Note que não precisamos enviar token manual, o navegador envia o cookie
+    // graças ao credentials: 'include' dentro do fetchAuth
+    const response = await fetchAuth("/auth/me");
+
+    if (response.status === 401 || response.status === 403) {
+      return null; // Não está logado (ou cookie expirou)
+    }
+
+    if (!response.ok) throw new Error("Erro ao buscar sessão");
+
+    return await response.json(); // Retorna { id, name, role, ... }
+  } catch (error) {
+    console.warn("Sessão inválida ou erro de rede:", error);
+    return null;
+  }
+}

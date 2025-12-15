@@ -26,6 +26,7 @@ import {
   pedirMagicLink,
   initGoogleButton,
   logout as authLogout,
+  verifySession,
 } from "./auth.js";
 
 // Estado Global
@@ -65,7 +66,17 @@ export function showToast(message, type = "info") {
 // 2. Garante que ela também exista no window (para compatibilidade com HTML e códigos antigos)
 window.showToast = showToast;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1. Verifica se tem retorno de Magic Link (aguarda a checagem)
+  // Se o usuário veio do email, essa função faz o login E a verificação de sessão.
+  await checkMagicLinkReturn();
+
+  // 2. Verifica o estado da sessão global
+  // Esta função é o fallback para todas as outras recargas de página.
+  // Ela deve ser executada após o checkMagicLinkReturn para não causar problemas de ordem.
+  await verifySession();
+
+  verifySession();
   initMenu();
   initCombos();
   initBebidas();

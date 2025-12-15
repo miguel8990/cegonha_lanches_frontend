@@ -1,5 +1,5 @@
 // site/js/auth.js
-import { loginUser, API_BASE_URL } from "./api.js";
+import { loginUser, API_BASE_URL, fetchCurrentUser } from "./api.js";
 import { openAuthModal, showToast } from "./main.js";
 
 // ==========================================
@@ -16,6 +16,23 @@ export function saveSession(token, user) {
   if (token) {
     localStorage.setItem("auth_token", token);
   }
+}
+
+export async function verifySession() {
+  const user = await fetchCurrentUser();
+
+  if (user) {
+    // Sucesso: O cookie é válido!
+    // Atualizamos o localStorage para garantir que a UI mostre o nome certo
+    saveSession(null, user);
+  } else {
+    // Falha: O cookie não existe ou expirou.
+    // Limpamos o localStorage para não mostrar "Olá, Fulano" se ele não pode comprar.
+    clearSession();
+  }
+
+  // Atualiza a UI (botões, nome, etc) chamando a função do main.js
+  if (window.checkLoginState) window.checkLoginState();
 }
 
 export function getSession() {
@@ -73,36 +90,38 @@ document.addEventListener("DOMContentLoaded", () => {
   checkMagicLinkReturn();
 });
 
-export function checkMagicLinkReturn() {
+export async function checkMagicLinkReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("status");
-  const token = params.get("token");
 
+  // Se a URL tiver status=verified, o backend acabou de criar o cookie!
   if (status === "verified") {
-    // Backend retornou sucesso via URL
-    const name = params.get("name");
-    const role = params.get("role");
-    const id = params.get("id");
-    const whatsapp = params.get("whatsapp");
+    // [MUDANÇA CRÍTICA] Não lemos mais name/id da URL. Perguntamos ao Backend!
+    // Mostra um toast provisório para feedback rápido
+    if (window.showToast) window.showToast("Validando acesso...", "info");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const user = await fetchCurrentUser(); // <--- AQUI É O PULO DO GATO
 
-    if (name && id) {
-      // O cookie HttpOnly já foi setado pelo backend no redirect.
-      // Apenas salvamos o estado visual.
-      const userObj = { id, name, role, whatsapp };
-      saveSession(token, { id, name, role, whatsapp });
+    if (user) {
+      // Salva os dados públicos para a UI
+      saveSession(null, user);
 
-      // Limpa a URL para ficar bonita
-      // Mude para isto:
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      if (window.checkLoginState) window.checkLoginState();
-      if (window.showToast) window.showToast(`Bem-vindo, ${name}!`, "success");
+      if (window.showToast)
+        window.showToast(`Bem-vindo, ${user.name}!`, "success");
+    } else {
+      if (window.showToast)
+        window.showToast("Erro ao confirmar login.", "error");
     }
+
+    // Limpa a URL completamente
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Atualiza a tela
+    if (window.checkLoginState) window.checkLoginState();
   } else if (status === "error_token") {
     if (window.showToast)
       window.showToast("Link inválido ou expirado.", "error");
-  } else if (status === "error_user") {
-    if (window.showToast) window.showToast("Usuário não encontrado.", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 }
 
